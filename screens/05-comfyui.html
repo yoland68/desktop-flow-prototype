@@ -724,6 +724,60 @@
         .inst-next-btn.green { background: #28c840; }
         .inst-next-btn.green:hover { background: #23b438; }
 
+        /* Tooltip icon */
+        .tip-wrap {
+            display: inline-flex; align-items: center;
+        }
+        .tip-icon {
+            width: 16px; height: 16px; border-radius: 50%;
+            border: 1px solid #3a3a42; color: #494a54;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 600; cursor: default;
+            font-family: serif; line-height: 1;
+            transition: border-color 0.15s, color 0.15s;
+            flex-shrink: 0;
+        }
+        .tip-icon:hover { border-color: #6a6a74; color: #9fa2bd; }
+
+        /* Global fixed tooltip — rendered at body level to escape overflow:hidden */
+        #global-tip {
+            position: fixed;
+            z-index: 99999;
+            width: 220px;
+            background: #26262c;
+            border: 1px solid #36363e;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 11px;
+            line-height: 1.55;
+            color: #b0b0bc;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-weight: 400;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        #global-tip.visible { opacity: 1; }
+        #global-tip::after {
+            content: '';
+            position: absolute;
+            top: 100%; left: var(--arrow-left, 50%);
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #36363e;
+        }
+        #global-tip::before {
+            content: '';
+            position: absolute;
+            top: 100%; left: var(--arrow-left, 50%);
+            transform: translateX(-50%);
+            border: 4px solid transparent;
+            border-top-color: #26262c;
+            margin-top: -1px;
+            z-index: 1;
+        }
+
         .inst-done-body {
             display: flex; flex-direction: column; align-items: center;
             gap: 10px; padding: 48px 0; text-align: center;
@@ -1979,10 +2033,44 @@
         if (e.target === this) closeSettings();
     });
 
+    // ── Global tooltip ───────────────────────────────────────────────────────
+    (function() {
+        const tip = document.getElementById('global-tip');
+        document.addEventListener('mouseover', function(e) {
+            const icon = e.target.closest('[data-tip]');
+            if (!icon) return;
+            tip.textContent = icon.dataset.tip;
+            tip.style.removeProperty('--arrow-left');
+            tip.classList.add('visible');
+            positionTip(icon);
+        });
+        document.addEventListener('mouseout', function(e) {
+            if (!e.target.closest('[data-tip]')) return;
+            tip.classList.remove('visible');
+        });
+        function positionTip(icon) {
+            const r = icon.getBoundingClientRect();
+            const tw = tip.offsetWidth;
+            // Center above the icon
+            let left = r.left + r.width / 2 - tw / 2;
+            // Clamp to viewport with 8px margin
+            left = Math.max(8, Math.min(left, window.innerWidth - tw - 8));
+            const top = r.top - tip.offsetHeight - 10;
+            tip.style.left = left + 'px';
+            tip.style.top  = top + 'px';
+            // Reposition arrow to point at icon center
+            const arrowLeft = (r.left + r.width / 2) - left;
+            tip.style.setProperty('--arrow-left', arrowLeft + 'px');
+        }
+    })();
+
     // ── Init ─────────────────────────────────────────────────────────────────
     toggleModelPanel();                       // open panel by default
     setTimeout(() => startAnim(52, 8000), 300); // continue from 52% on load
 </script>
+
+<!-- Global tooltip -->
+<div id="global-tip"></div>
 
 <!-- ── Settings Overlay ──────────────────────────────────────────────────── -->
 <div class="settings-overlay" id="settings-overlay">
@@ -2264,11 +2352,21 @@
             <!-- List view -->
             <div id="inst-list-view">
                 <div class="inst-list-header">
-                    <div class="inst-list-title">Instances</div>
-                    <button class="inst-new-btn" onclick="instShowWizard()">
-                        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1.5V9.5M1.5 5.5H9.5" stroke="#9fa2bd" stroke-width="1.4" stroke-linecap="round"/></svg>
-                        New Instance
-                    </button>
+                    <div style="display:flex;align-items:center;gap:7px;">
+                        <div class="inst-list-title">Instances</div>
+                        <span class="tip-wrap">
+                            <span class="tip-icon" data-tip="An instance is a separate ComfyUI environment that runs independently. Each instance has its own models, workflows, custom nodes, and settings — useful for keeping different projects or configurations isolated.">?</span>
+                        </span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <span class="tip-wrap">
+                            <span class="tip-icon" data-tip="Add a new ComfyUI environment alongside your existing ones. New instances can run locally on this machine, in the Comfy Cloud, or connect to a remote server.">?</span>
+                        </span>
+                        <button class="inst-new-btn" onclick="instShowWizard()">
+                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1.5V9.5M1.5 5.5H9.5" stroke="#9fa2bd" stroke-width="1.4" stroke-linecap="round"/></svg>
+                            New Instance
+                        </button>
+                    </div>
                 </div>
 
                 <div class="inst-row current">

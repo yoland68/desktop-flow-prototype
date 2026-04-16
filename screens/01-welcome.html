@@ -5,6 +5,100 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ComfyUI Desktop - Welcome</title>
     <link rel="stylesheet" href="../styles/common.css">
+    <style>
+        .consent-section {
+            margin-top: 24px;
+        }
+        .consent-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 8px;
+        }
+        .terms-box {
+            height: 110px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 12px 14px;
+            font-size: 12px;
+            color: #777;
+            line-height: 1.65;
+            background: #fafafa;
+            scrollbar-width: thin;
+            scrollbar-color: #ccc transparent;
+        }
+        .terms-box::-webkit-scrollbar { width: 4px; }
+        .terms-box::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+        .terms-box h4 { font-size: 11px; font-weight: 700; color: #555; margin: 10px 0 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+        .terms-box h4:first-child { margin-top: 0; }
+        .terms-box p { margin-bottom: 6px; }
+
+        .consent-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 13px 14px;
+            border-radius: 8px;
+            border: 1px solid #e8e8e8;
+            background: #fafafa;
+            margin-top: 8px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .consent-row:hover { border-color: #c8c8f0; background: #f4f4ff; }
+        .consent-row.checked { border-color: #667eea; background: #f4f4ff; }
+
+        .consent-row input[type="checkbox"] {
+            width: 16px; height: 16px;
+            margin-top: 2px;
+            cursor: pointer;
+            accent-color: #667eea;
+            flex-shrink: 0;
+        }
+        .consent-row-text { flex: 1; }
+        .consent-row-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #333;
+            line-height: 1.4;
+        }
+        .consent-row-desc {
+            font-size: 12px;
+            color: #888;
+            margin-top: 3px;
+            line-height: 1.5;
+        }
+        .consent-row-note {
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 5px;
+            line-height: 1.45;
+            display: flex;
+            align-items: flex-start;
+            gap: 5px;
+        }
+        .consent-row-note svg { flex-shrink: 0; margin-top: 1px; }
+        .consent-row-title a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .consent-row-title a:hover { text-decoration: underline; }
+
+        .consent-badge {
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-weight: 600;
+            flex-shrink: 0;
+            align-self: flex-start;
+            margin-top: 2px;
+        }
+        .badge-optional { background: #eef0ff; color: #667eea; }
+        .badge-recommended { background: #edfbf0; color: #2da44e; }
+    </style>
 </head>
 <body>
     <div class="installer-window">
@@ -14,15 +108,11 @@
         </div>
 
         <div class="installer-content">
-            <h2 style="margin-bottom: 20px; color: #333;">Welcome to ComfyUI Desktop</h2>
+            <h2 style="margin-bottom: 16px; color: #333;">Welcome to ComfyUI Desktop</h2>
 
-            <div class="info-box">
-                <p>ComfyUI Desktop brings powerful node-based AI image generation to your desktop with an intuitive interface and local processing.</p>
-            </div>
-
-            <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border-radius: 8px;">
-                <h3 style="margin-bottom: 15px; color: #555; font-size: 16px;">What's Included:</h3>
-                <ul style="margin-left: 20px; color: #666; line-height: 2;">
+            <div style="padding: 16px 18px; background: #f8f9fa; border-radius: 8px; margin-bottom: 0;">
+                <h3 style="margin-bottom: 12px; color: #555; font-size: 14px; font-weight: 600;">What's Included</h3>
+                <ul style="margin-left: 18px; color: #666; line-height: 1.95; font-size: 14px;">
                     <li>Complete ComfyUI workflow editor</li>
                     <li>Pre-configured model management</li>
                     <li>GPU acceleration support</li>
@@ -30,9 +120,70 @@
                 </ul>
             </div>
 
+            <!-- Consent section -->
+            <div class="consent-section">
+
+                <!-- Terms & Conditions -->
+                <div class="consent-label">Terms &amp; Conditions</div>
+                <div class="terms-box">
+                    <h4>License Agreement</h4>
+                    <p>ComfyUI Desktop is provided under the GNU General Public License v3.0. By installing this software you agree to be bound by the terms of this license.</p>
+
+                    <h4>Use of Software</h4>
+                    <p>ComfyUI Desktop is intended for lawful purposes only. You may not use this software to generate content that violates applicable laws, infringes third-party intellectual property rights, or violates our community guidelines.</p>
+
+                    <h4>Privacy Policy</h4>
+                    <p>We collect limited diagnostic and usage data to improve the product. No images, prompts, or workflow data are transmitted without your explicit consent. You may opt out of telemetry at any time from Settings.</p>
+
+                    <h4>Disclaimer</h4>
+                    <p>This software is provided "as is" without warranty of any kind. Comfy Org is not liable for any damages arising from the use of this software or AI-generated content produced with it.</p>
+
+                    <h4>Updates</h4>
+                    <p>ComfyUI Desktop may automatically download and install updates. You can disable automatic updates in Settings at any time.</p>
+                </div>
+
+                <!-- T&C checkbox — required, default checked -->
+                <label class="consent-row checked" id="terms-row" onclick="toggleRow('terms-cb', 'terms-row', updateGetStarted)">
+                    <input type="checkbox" id="terms-cb" checked onclick="event.stopPropagation()" onchange="syncRow('terms-cb','terms-row'); updateGetStarted()">
+                    <div class="consent-row-text">
+                        <div class="consent-row-title">
+                            I have read and agree to the
+                            <a href="#" onclick="event.stopPropagation()">Terms of Service</a>
+                            and
+                            <a href="#" onclick="event.stopPropagation()">Privacy Policy</a>
+                        </div>
+                    </div>
+                </label>
+
+                <!-- Telemetry — optional, default checked -->
+                <label class="consent-row checked" id="telemetry-row" onclick="toggleRow('telemetry-cb', 'telemetry-row', null)">
+                    <input type="checkbox" id="telemetry-cb" checked onclick="event.stopPropagation()" onchange="syncRow('telemetry-cb','telemetry-row')">
+                    <div class="consent-row-text">
+                        <div class="consent-row-title">Help improve ComfyUI Desktop</div>
+                        <div class="consent-row-desc">Send anonymous crash reports and usage statistics. No images, prompts, or personal data are ever collected.</div>
+                    </div>
+                    <span class="consent-badge badge-optional">Optional</span>
+                </label>
+
+                <!-- Auto Updates — optional, default checked -->
+                <label class="consent-row checked" id="autoupdate-row" onclick="toggleRow('autoupdate-cb', 'autoupdate-row', null)">
+                    <input type="checkbox" id="autoupdate-cb" checked onclick="event.stopPropagation()" onchange="syncRow('autoupdate-cb','autoupdate-row')">
+                    <div class="consent-row-text">
+                        <div class="consent-row-title">Enable automatic updates</div>
+                        <div class="consent-row-desc">Keep ComfyUI Desktop up to date with the latest features and security fixes automatically.</div>
+                        <div class="consent-row-note">
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#aaa" stroke-width="1.1"/><path d="M6 5.5V8M6 4V4.5" stroke="#aaa" stroke-width="1.2" stroke-linecap="round"/></svg>
+                            Don't worry — you can revert to a previous version and disable this option anytime from Settings.
+                        </div>
+                    </div>
+                    <span class="consent-badge badge-recommended">Recommended</span>
+                </label>
+
+            </div>
+
             <div class="button-group">
                 <button class="btn btn-secondary" onclick="window.location.href='../index.html'">Cancel</button>
-                <button class="btn btn-primary" onclick="window.location.href='02a-migration-detect.html'">Get Started</button>
+                <button class="btn btn-primary" id="get-started-btn" onclick="window.location.href='02a-migration-detect.html'">Get Started</button>
             </div>
 
             <div class="nav-footer">
@@ -40,5 +191,25 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function syncRow(cbId, rowId) {
+            const cb = document.getElementById(cbId);
+            const row = document.getElementById(rowId);
+            row.classList.toggle('checked', cb.checked);
+        }
+
+        function toggleRow(cbId, rowId, callback) {
+            const cb = document.getElementById(cbId);
+            cb.checked = !cb.checked;
+            syncRow(cbId, rowId);
+            if (callback) callback();
+        }
+
+        function updateGetStarted() {
+            document.getElementById('get-started-btn').disabled =
+                !document.getElementById('terms-cb').checked;
+        }
+    </script>
 </body>
 </html>
