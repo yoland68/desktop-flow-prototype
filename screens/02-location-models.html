@@ -144,6 +144,102 @@
         .background-notice strong {
             color: #0d47a1;
         }
+
+        .detected-gpu-field {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 20px;
+            opacity: 0.7;
+        }
+
+        .gpu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .gpu-card {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            color: #333;
+            min-height: 52px;
+        }
+
+        .gpu-card:hover {
+            border-color: #aab4f0;
+            background: #f4f5ff;
+        }
+
+        .gpu-card.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .gpu-icon {
+            width: 32px;
+            height: 32px;
+            background: #1a1a1a;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+            letter-spacing: 0.02em;
+        }
+
+        .gpu-icon.nvidia-icon {
+            background: #1a1a1a;
+            color: #76b900;
+        }
+
+        .gpu-icon.amd-icon {
+            background: #1a1a1a;
+            color: #ed1c24;
+        }
+
+        .gpu-label {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .gpu-badge {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 2px 7px;
+            border-radius: 20px;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+        }
+
+        .section-sublabel {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
@@ -155,6 +251,35 @@
 
         <div class="installer-content">
             <h2 style="margin-bottom: 25px; color: #333;">Configure Your Installation</h2>
+
+            <!-- GPU Selection Section -->
+            <div class="config-section">
+                <h3>GPU Configuration</h3>
+
+                <p class="section-sublabel">Detected GPU</p>
+                <div class="detected-gpu-field">NVIDIA</div>
+
+                <p class="section-sublabel">Select your GPU</p>
+                <div class="gpu-grid">
+                    <div class="gpu-card selected" id="gpu-nvidia" onclick="selectGPU('nvidia')">
+                        <div class="gpu-icon nvidia-icon">NV</div>
+                        <span class="gpu-label">NVIDIA · 205 MB</span>
+                        <span class="gpu-badge">Recommended</span>
+                    </div>
+                    <div class="gpu-card" id="gpu-amd" onclick="selectGPU('amd')">
+                        <div class="gpu-icon amd-icon">AMD</div>
+                        <span class="gpu-label">AMD · 897 MB</span>
+                    </div>
+                    <div class="gpu-card" id="gpu-xpu" onclick="selectGPU('xpu')">
+                        <div class="gpu-icon">XPU</div>
+                        <span class="gpu-label">Intel Arc (XPU) · 945 MB</span>
+                    </div>
+                    <div class="gpu-card" id="gpu-cpu" onclick="selectGPU('cpu')">
+                        <div class="gpu-icon">CPU</div>
+                        <span class="gpu-label">CPU · 507 MB</span>
+                    </div>
+                </div>
+            </div>
 
             <!-- Installation Directory Section -->
             <div class="config-section">
@@ -264,6 +389,11 @@
     </div>
 
     <script>
+        function selectGPU(id) {
+            document.querySelectorAll('.gpu-card').forEach(c => c.classList.remove('selected'));
+            document.getElementById('gpu-' + id).classList.add('selected');
+        }
+
         function updateSummary() {
             const model1 = document.getElementById('model1').checked;
             const model2 = document.getElementById('model2').checked;
