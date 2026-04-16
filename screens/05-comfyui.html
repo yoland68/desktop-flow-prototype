@@ -520,6 +520,27 @@
         .settings-nav-item:hover { background: rgba(255,255,255,0.04); color: #c0c0c8; }
         .settings-nav-item.active { background: #252528; color: #e0e0e0; }
 
+        .settings-inst-bar {
+            border-top: 1px solid #222225;
+            padding: 10px 12px;
+            display: flex; align-items: center; gap: 9px;
+            cursor: pointer; flex-shrink: 0;
+            transition: background 0.12s;
+        }
+        .settings-inst-bar:hover { background: rgba(255,255,255,0.04); }
+        .settings-inst-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: #28c840; flex-shrink: 0;
+        }
+        .settings-inst-name {
+            flex: 1; font-size: 12px; font-weight: 500;
+            color: #9fa2bd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .settings-inst-label {
+            font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em;
+            color: #3a3a42; flex-shrink: 0;
+        }
+
         .settings-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
         .settings-close-wrap { position: absolute; top: 14px; right: 16px; z-index: 10; }
         .settings-close-btn {
@@ -652,6 +673,39 @@
             transition: background 0.15s, color 0.15s;
         }
         .inst-connect-btn:hover { background: #262629; color: #e0e0e0; }
+
+        .inst-clone-btn {
+            width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+            background: transparent; border: 1px solid #2e2e36; border-radius: 6px;
+            color: #494a54; cursor: pointer; flex-shrink: 0;
+            transition: background 0.15s, color 0.15s, border-color 0.15s; opacity: 0;
+        }
+        .inst-row:hover .inst-clone-btn { opacity: 1; }
+        .inst-clone-btn:hover { background: #262629; color: #9fa2bd; border-color: #494a50; }
+
+        .inst-clone-source {
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(255,255,255,0.03); border: 1px solid #2e2e36;
+            border-radius: 8px; padding: 10px 14px; margin-bottom: 16px;
+        }
+        .inst-clone-source-dot { width: 6px; height: 6px; border-radius: 50%; background: #28c840; flex-shrink: 0; }
+        .inst-clone-source-name { font-size: 12px; font-weight: 500; color: #e0e0e0; flex: 1; }
+        .inst-clone-source-tag { font-size: 9px; color: #494a54; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .inst-clone-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 11px 14px; border-radius: 8px;
+            border: 1px solid #2e2e36; cursor: pointer;
+            transition: border-color 0.15s, background 0.15s; margin-bottom: 6px;
+        }
+        .inst-clone-item:hover { background: rgba(255,255,255,0.02); border-color: #3e3e46; }
+        .inst-clone-item:has(input:checked) { border-color: #0b8ce9; background: rgba(11,140,233,0.06); }
+        .inst-clone-item input[type="checkbox"] {
+            width: 14px; height: 14px; accent-color: #0b8ce9; cursor: pointer; flex-shrink: 0;
+        }
+        .inst-clone-item-info { flex: 1; min-width: 0; }
+        .inst-clone-item-name { font-size: 12px; font-weight: 500; color: #e0e0e0; }
+        .inst-clone-item-size { font-size: 10px; color: #494a54; margin-top: 2px; }
 
         /* Wizard inside settings */
         .inst-wizard-header {
@@ -1930,6 +1984,43 @@
 
     function instSwitch(name) {
         document.querySelector('.instance-bar-name').textContent = name;
+        document.getElementById('settings-inst-name').textContent = name;
+    }
+
+    // ── Clone Wizard ──────────────────────────────────────────────────────────
+    let cloneSource = '';
+
+    function startCloneWizard(name) {
+        cloneSource = name;
+        document.getElementById('clone-source-label').textContent = name;
+        document.getElementById('iclone-name').value = 'Copy of ' + name;
+        document.getElementById('iclone-path').value = 'C:\\Users\\You\\' + name.replace(/\s+/g, '-') + '-Clone';
+        ['clone-nodes','clone-workflows','clone-settings'].forEach(id => { document.getElementById(id).checked = true; });
+        cloneShowStep(1);
+        document.getElementById('inst-list-view').style.display = 'none';
+        document.getElementById('inst-wizard-view').style.display = 'none';
+        document.getElementById('inst-clone-view').style.display = 'block';
+    }
+
+    function cloneShowStep(n) {
+        ['iclone-w1','iclone-w2','iclone-wdone'].forEach(id => { document.getElementById(id).style.display = 'none'; });
+        const key = n === 'done' ? 'iclone-wdone' : 'iclone-w' + n;
+        document.getElementById(key).style.display = 'block';
+    }
+
+    function cloneGoW2() { cloneShowStep(2); }
+
+    function cloneLaunch() {
+        const name = document.getElementById('iclone-name').value.trim() || ('Copy of ' + cloneSource);
+        document.getElementById('clone-done-title').textContent = '"' + name + '" is ready';
+        document.getElementById('clone-done-sub').textContent = 'Clone of "' + cloneSource + '" is initializing.';
+        cloneShowStep('done');
+    }
+
+    function cloneShowList() {
+        document.getElementById('inst-clone-view').style.display = 'none';
+        document.getElementById('inst-wizard-view').style.display = 'none';
+        document.getElementById('inst-list-view').style.display = 'block';
     }
 
     // ── Instance Bar ─────────────────────────────────────────────────────────
@@ -2048,6 +2139,13 @@
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="#7a7a84" stroke-width="1.2"/><path d="M7 6.5V10M7 4.5V5" stroke="#7a7a84" stroke-width="1.4" stroke-linecap="round"/></svg>
                 About
             </div>
+        </div>
+
+        <!-- Active instance indicator -->
+        <div class="settings-inst-bar" onclick="selectSettingsTab('instance', document.querySelector('[data-tab=instance]'))">
+            <div class="settings-inst-dot" id="settings-inst-dot"></div>
+            <span class="settings-inst-name" id="settings-inst-name">ComfyUI Desktop</span>
+            <span class="settings-inst-label">Active</span>
         </div>
     </div>
 
@@ -2278,6 +2376,9 @@
                         <div class="inst-meta">Local Machine &middot; v0.3.8</div>
                     </div>
                     <span class="inst-badge active">Active</span>
+                    <button class="inst-clone-btn" title="Clone instance" onclick="event.stopPropagation(); startCloneWizard('ComfyUI Desktop')">
+                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="4.5" y="1.5" width="7" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="1.5" y="4" width="7" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
+                    </button>
                 </div>
 
                 <div class="inst-row" onclick="instSwitch('Comfy Cloud', this)">
@@ -2288,6 +2389,9 @@
                     </div>
                     <span class="inst-badge cloud">Cloud</span>
                     <button class="inst-connect-btn" onclick="event.stopPropagation(); instSwitch('Comfy Cloud')">Connect</button>
+                    <button class="inst-clone-btn" title="Clone instance" onclick="event.stopPropagation(); startCloneWizard('Comfy Cloud')">
+                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="4.5" y="1.5" width="7" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="1.5" y="4" width="7" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
+                    </button>
                 </div>
 
                 <div class="inst-row">
@@ -2298,6 +2402,9 @@
                     </div>
                     <span class="inst-badge">Local</span>
                     <button class="inst-connect-btn" style="opacity:0.4;cursor:default;" disabled>Offline</button>
+                    <button class="inst-clone-btn" title="Clone instance" onclick="event.stopPropagation(); startCloneWizard('Local Dev')">
+                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="4.5" y="1.5" width="7" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="1.5" y="4" width="7" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
+                    </button>
                 </div>
             </div>
 
@@ -2395,6 +2502,103 @@
                         <div class="inst-done-title" id="inst-done-title">Instance created</div>
                         <div class="inst-done-sub" id="inst-done-sub">Your instance is initializing.</div>
                         <button class="inst-next-btn" style="margin-top:12px;" onclick="instShowList()">Done</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Clone wizard view -->
+            <div id="inst-clone-view" style="display:none;">
+
+                <!-- Step 1: What to copy -->
+                <div id="iclone-w1">
+                    <div class="inst-wizard-header">
+                        <button class="inst-back-btn" onclick="cloneShowList()">
+                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8.5 2.5L4.5 6.5L8.5 10.5" stroke="#7a7a84" stroke-width="1.4" stroke-linecap="round"/></svg>
+                            Back
+                        </button>
+                        <div class="inst-wizard-title">Clone Instance</div>
+                        <div class="inst-step-label">Step 1 of 2</div>
+                    </div>
+
+                    <div class="inst-field-label">Cloning from</div>
+                    <div class="inst-clone-source">
+                        <div class="inst-clone-source-dot" id="clone-source-dot"></div>
+                        <span class="inst-clone-source-name" id="clone-source-label">ComfyUI Desktop</span>
+                        <span class="inst-clone-source-tag">source</span>
+                    </div>
+
+                    <div class="inst-wizard-q">What would you like to copy?</div>
+
+                    <label class="inst-clone-item">
+                        <input type="checkbox" id="clone-nodes" checked>
+                        <div class="inst-clone-item-info">
+                            <div class="inst-clone-item-name">Custom Nodes &amp; Extensions</div>
+                            <div class="inst-clone-item-size">156 MB</div>
+                        </div>
+                    </label>
+                    <label class="inst-clone-item">
+                        <input type="checkbox" id="clone-workflows" checked>
+                        <div class="inst-clone-item-info">
+                            <div class="inst-clone-item-name">Workflows &amp; Presets</div>
+                            <div class="inst-clone-item-size">45 MB</div>
+                        </div>
+                    </label>
+                    <label class="inst-clone-item">
+                        <input type="checkbox" id="clone-settings" checked>
+                        <div class="inst-clone-item-info">
+                            <div class="inst-clone-item-name">Settings &amp; Preferences</div>
+                            <div class="inst-clone-item-size">2 MB</div>
+                        </div>
+                    </label>
+                    <div class="inst-wizard-nav">
+                        <button class="inst-next-btn" onclick="cloneGoW2()">
+                            Continue
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2.5L8 6L4 9.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Name & Location -->
+                <div id="iclone-w2" style="display:none;">
+                    <div class="inst-wizard-header">
+                        <button class="inst-back-btn" onclick="cloneShowStep(1)">
+                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8.5 2.5L4.5 6.5L8.5 10.5" stroke="#7a7a84" stroke-width="1.4" stroke-linecap="round"/></svg>
+                            Back
+                        </button>
+                        <div class="inst-wizard-title">Name &amp; Location</div>
+                        <div class="inst-step-label">Step 2 of 2</div>
+                    </div>
+
+                    <div class="inst-field-label">Instance name</div>
+                    <input class="inst-input" id="iclone-name" placeholder="Copy of ComfyUI Desktop" style="margin-bottom:16px;"/>
+
+                    <div class="inst-field-label">Install location</div>
+                    <div class="inst-field-wrap">
+                        <input class="inst-input" id="iclone-path" value="C:\Users\You\ComfyUI-Clone" placeholder="C:\Users\You\ComfyUI"/>
+                        <div class="inst-browse" title="Browse" onclick="alert('File browser would open here')">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 5C2 4.4 2.4 4 3 4H6L7.5 5.5H13C13.6 5.5 14 5.9 14 6.5V11C14 11.6 13.6 12 13 12H3C2.4 12 2 11.6 2 11V5Z" stroke="#9fa2bd" stroke-width="1.2" stroke-linejoin="round"/></svg>
+                        </div>
+                    </div>
+                    <div style="font-size:11px;color:#3a3a42;margin-bottom:20px;">The clone will be stored in this directory. Files are copied, the original remains intact.</div>
+
+                    <div class="inst-wizard-nav">
+                        <button class="inst-next-btn green" onclick="cloneLaunch()">
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1.5" y="1.5" width="4.5" height="5.5" rx="0.75" stroke="#fff" stroke-width="1.3"/><rect x="6" y="5" width="4.5" height="5.5" rx="0.75" stroke="#fff" stroke-width="1.3"/></svg>
+                            Clone Instance
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Done -->
+                <div id="iclone-wdone" style="display:none;">
+                    <div class="inst-done-body">
+                        <div class="inst-done-icon">
+                            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 11L8.5 15.5L18 6" stroke="#28c840" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </div>
+                        <div class="inst-done-title" id="clone-done-title">Clone created</div>
+                        <div class="inst-done-sub" id="clone-done-sub">Your clone is initializing.</div>
+                        <button class="inst-next-btn" style="margin-top:12px;" onclick="cloneShowList()">Done</button>
                     </div>
                 </div>
 
