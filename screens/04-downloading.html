@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComfyUI Desktop - Downloading</title>
+    <link rel="stylesheet" href="../styles/common.css">
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 20px;
+            border: 4px solid #f0f0f0;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .download-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            display: block;
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="installer-window">
+        <div class="installer-header">
+            <h1>ComfyUI Desktop</h1>
+            <p>Installing Application</p>
+        </div>
+
+        <div class="installer-content">
+            <div class="loading-icon"></div>
+
+            <h2 style="margin-bottom: 10px; color: #333; text-align: center;">Installing ComfyUI</h2>
+            <p style="text-align: center; color: #666; margin-bottom: 30px;">Setting up the application...</p>
+
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress" style="width: 0%;"></div>
+                </div>
+                <div class="progress-text">
+                    <span id="progress-percent">0%</span> complete
+                </div>
+            </div>
+
+            <div style="margin-top: 30px; padding: 15px; background: #f8f9fa; border-radius: 6px; font-size: 13px; color: #666; text-align: center;">
+                <span id="status-text">Installing application packages...</span>
+            </div>
+
+            <div style="margin-top: 20px; padding: 15px; background: #e7f3ff; border-left: 4px solid #2196F3; border-radius: 4px;">
+                <p style="color: #1565C0; font-size: 13px; margin: 0; line-height: 1.6;">
+                    <strong>Note:</strong> ComfyUI will launch shortly. Model downloads will continue in the background
+                    and you can start using the application immediately.
+                </p>
+            </div>
+
+            <div class="button-group" style="margin-top: 40px;">
+                <button class="btn btn-primary" onclick="window.location.href='05-comfyui.html'" id="launch-btn" disabled style="opacity: 0.5;">
+                    Launching...
+                </button>
+            </div>
+
+            <div class="nav-footer">
+                <a href="../index.html">← Back to Navigation</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fast installation animation - completes in 3 seconds
+        let progress = 0;
+        const progressBar = document.getElementById('progress');
+        const progressPercent = document.getElementById('progress-percent');
+        const statusText = document.getElementById('status-text');
+        const launchBtn = document.getElementById('launch-btn');
+
+        const statuses = [
+            'Extracting packages...',
+            'Installing dependencies...',
+            'Configuring environment...',
+            'Setting up ComfyUI...',
+            'Finalizing installation...',
+            'Ready to launch!'
+        ];
+
+        let statusIndex = 0;
+        const totalDuration = 3000; // 3 seconds
+        const intervalTime = 50; // Update every 50ms
+        const incrementPerInterval = 100 / (totalDuration / intervalTime);
+
+        const timer = setInterval(() => {
+            if (progress < 100) {
+                progress += incrementPerInterval;
+                if (progress > 100) progress = 100;
+
+                progressBar.style.width = progress + '%';
+                progressPercent.textContent = Math.floor(progress) + '%';
+
+                // Update status text based on progress
+                const newStatusIndex = Math.floor((progress / 100) * statuses.length);
+                if (newStatusIndex !== statusIndex && newStatusIndex < statuses.length) {
+                    statusIndex = newStatusIndex;
+                    statusText.textContent = statuses[statusIndex];
+                }
+
+                // Enable button and auto-redirect when complete
+                if (progress >= 100) {
+                    clearInterval(timer);
+                    launchBtn.disabled = false;
+                    launchBtn.textContent = 'Launch ComfyUI';
+                    launchBtn.style.opacity = '1';
+
+                    // Auto-launch after 1 second
+                    setTimeout(() => {
+                        window.location.href = '05-comfyui.html';
+                    }, 1000);
+                }
+            }
+        }, intervalTime);
+    </script>
+</body>
+</html>

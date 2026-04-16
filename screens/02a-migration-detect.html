@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComfyUI Desktop - Existing Installation Detected</title>
+    <link rel="stylesheet" href="../styles/common.css">
+    <style>
+        .detection-box {
+            background: #f8f9fa;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .detection-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
+        }
+
+        .installation-path {
+            font-family: 'Courier New', monospace;
+            background: white;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 15px 0;
+            color: #667eea;
+            font-weight: 600;
+            border: 1px solid #e0e0e0;
+        }
+
+        .choice-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .choice-card {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .choice-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .choice-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .choice-card p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .choice-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="installer-window">
+        <div class="installer-header">
+            <h1>ComfyUI Desktop</h1>
+            <p>Existing Installation Detected</p>
+        </div>
+
+        <div class="installer-content">
+            <h2 style="margin-bottom: 20px; color: #333;">Welcome Back!</h2>
+
+            <div class="detection-box">
+                <div class="detection-icon">✓</div>
+                <p style="margin-bottom: 10px; color: #333; font-weight: 600;">We found an existing ComfyUI installation</p>
+                <div class="installation-path">C:\ComfyUI_windows_portable</div>
+                <p style="font-size: 13px; color: #666; margin-top: 10px;">
+                    Detected version: ComfyUI v0.2.3 (Standalone)
+                </p>
+            </div>
+
+            <h3 style="margin: 25px 0 15px 0; color: #333; font-size: 16px;">How would you like to proceed?</h3>
+
+            <div class="choice-cards">
+                <div class="choice-card" onclick="window.location.href='02b-migration-config.html'">
+                    <div class="choice-icon">🔄</div>
+                    <h3>Migrate & Upgrade</h3>
+                    <p>Transfer your workflows, models, and settings to the new desktop app</p>
+                </div>
+
+                <div class="choice-card" onclick="window.location.href='02-location-models.html'">
+                    <div class="choice-icon">✨</div>
+                    <h3>Fresh Install</h3>
+                    <p>Start fresh with a new installation (old version will remain untouched)</p>
+                </div>
+            </div>
+
+            <div class="info-box" style="margin-top: 20px;">
+                <p style="font-size: 13px;">
+                    <strong>Note:</strong> Your existing ComfyUI installation will not be modified or removed during this process.
+                </p>
+            </div>
+
+            <div class="button-group" style="margin-top: 30px;">
+                <button class="btn btn-secondary" onclick="window.location.href='01-welcome.html'">Back</button>
+            </div>
+
+            <div class="nav-footer">
+                <a href="../index.html">← Back to Navigation</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

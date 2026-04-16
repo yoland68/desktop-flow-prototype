@@ -1,0 +1,2419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComfyUI Desktop</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #141414;
+            color: #fff;
+            overflow: hidden;
+            font-size: 14px;
+        }
+
+        .app { height: 100vh; display: flex; flex-direction: column; }
+
+        /* Title Bar */
+        .title-bar {
+            height: 36px;
+            background: #000;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            flex-shrink: 0;
+            -webkit-app-region: drag;
+        }
+        .window-controls { display: flex; gap: 8px; align-items: center; -webkit-app-region: no-drag; }
+        .wc-btn { width: 10px; height: 10px; border-radius: 50%; border: none; cursor: pointer; }
+        .wc-close    { background: #ff5f57; }
+        .wc-minimize { background: #febc2e; }
+        .wc-zoom     { background: #28c840; }
+
+        /* Tab Bar */
+        .tab-bar {
+            height: 36px;
+            background: #171718;
+            border-bottom: 1px solid #494a50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            box-shadow: 1px 1px 8px rgba(0,0,0,0.4);
+            overflow: hidden;
+        }
+        .tab-bar-left { display: flex; align-items: center; height: 100%; }
+        .workflow-tab {
+            display: flex; align-items: center; gap: 8px;
+            height: 36px; padding: 8px 16px;
+            border-left: 1px solid #494a50;
+            color: #8a8a8a; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+        }
+        .workflow-tab.active { background: #494a50; color: #fff; }
+        .tab-close-btn { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; }
+        .tab-add-btn {
+            display: flex; align-items: center; justify-content: center;
+            height: 36px; padding: 11px 18px;
+            border-left: 1px solid #494a50; cursor: pointer; flex-shrink: 0;
+        }
+        .tab-bar-right { display: flex; align-items: center; gap: 8px; padding-right: 8px; height: 100%; flex-shrink: 0; }
+        .icon-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; }
+        .user-btn { display: flex; align-items: center; gap: 4px; height: 32px; padding-right: 4px; border-radius: 24px; cursor: pointer; }
+        .user-avatar {
+            width: 24px; height: 24px; background: #262729; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: bold; color: white;
+        }
+
+        /* Content */
+        .content { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+
+        /* Icon Sidebar */
+        .icon-sidebar {
+            width: 80px;
+            background: #171718;
+            border-right: 1px solid #494a50;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 4px 0 8px;
+            box-shadow: 1px 1px 8px rgba(0,0,0,0.4);
+            flex-shrink: 0;
+            z-index: 3;
+        }
+        .sidebar-top, .sidebar-bottom { display: flex; flex-direction: column; align-items: center; }
+        .sidebar-icon-btn {
+            width: 80px; height: 56px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 4px; cursor: pointer; border-radius: 6px;
+            transition: background 0.15s;
+            position: relative;
+        }
+        .sidebar-dl-badge {
+            position: absolute;
+            top: 8px; right: 16px;
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: #7c6af7;
+            border: 1.5px solid #171718;
+            display: none;
+        }
+        .sidebar-dl-badge.visible { display: block; }
+        .sidebar-dl-badge.pulsing {
+            animation: badge-pulse 1.2s ease-in-out infinite;
+        }
+        @keyframes badge-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.5; transform: scale(0.75); }
+        }
+        .sidebar-icon-btn:hover { background: rgba(255,255,255,0.06); }
+        .sidebar-icon-btn.active { background: rgba(255,255,255,0.1); }
+        .sidebar-icon-btn.active svg * { stroke: #fff !important; fill: none !important; }
+        .sidebar-icon-btn.active svg circle[fill="#8a8a8a"] { fill: #fff !important; }
+        .sidebar-icon-btn.active span { color: #fff; }
+        .sidebar-icon-btn span { font-size: 10px; color: #8a8a8a; line-height: 1; transition: color 0.15s; }
+        .c-logo-btn {
+            width: 80px; height: 48px;
+            display: flex; align-items: center; justify-content: center;
+            gap: 2px; padding: 16px 8px 16px 12px; cursor: pointer;
+        }
+
+        /* Model Library Panel */
+        .model-panel {
+            width: 300px;
+            background: #1a1a1b;
+            border-right: 1px solid #494a50;
+            display: none;
+            flex-direction: column;
+            flex-shrink: 0;
+            z-index: 2;
+            overflow: hidden;
+        }
+        .model-panel.open { display: flex; }
+
+        .mp-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 16px 12px;
+            flex-shrink: 0;
+        }
+        .mp-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+        }
+        .mp-header-actions { display: flex; gap: 4px; }
+        .mp-icon-btn {
+            width: 28px; height: 28px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 6px; cursor: pointer;
+        }
+        .mp-icon-btn:hover { background: rgba(255,255,255,0.08); }
+
+        .mp-search {
+            margin: 0 12px 8px;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .mp-search input {
+            width: 100%;
+            background: #262729;
+            border: 1px solid #494a50;
+            border-radius: 8px;
+            padding: 7px 12px 7px 32px;
+            color: #8a8a8a;
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+        }
+        .mp-search input::placeholder { color: #55565e; }
+        .mp-search-icon {
+            position: absolute;
+            left: 10px; top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .mp-divider { height: 1px; background: #494a50; margin: 4px 0; flex-shrink: 0; }
+
+        .mp-tree {
+            flex: 1;
+            overflow-y: auto;
+            padding: 4px 0;
+        }
+        .mp-tree::-webkit-scrollbar { width: 4px; }
+        .mp-tree::-webkit-scrollbar-track { background: transparent; }
+        .mp-tree::-webkit-scrollbar-thumb { background: #494a50; border-radius: 2px; }
+
+        .tree-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 12px;
+            cursor: pointer;
+            color: #ccc;
+            font-size: 13px;
+            user-select: none;
+        }
+        .tree-row:hover { background: rgba(255,255,255,0.05); }
+        .tree-row.expanded { color: #fff; }
+
+        .tree-chevron {
+            width: 16px; height: 16px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            transition: transform 0.2s;
+        }
+        .tree-row.expanded .tree-chevron { transform: rotate(90deg); }
+
+        .tree-folder { flex-shrink: 0; }
+
+        .tree-name { flex: 1; }
+
+        /* Download badge on diffusion_models row */
+        .dl-badge {
+            width: 6px; height: 6px;
+            background: #7c6af7;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* Download item inside expanded folder */
+        .dl-item-wrap {
+            display: none;
+            flex-direction: column;
+        }
+        .dl-item-wrap.open { display: flex; }
+
+        .dl-item-collapsed {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px 6px 36px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #8a8a8a;
+        }
+        .dl-item-collapsed:hover { background: rgba(255,255,255,0.05); }
+
+        .dl-mini-bar-wrap {
+            flex: 1;
+            height: 3px;
+            background: #333;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .dl-mini-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #7c6af7, #5b52d4);
+            border-radius: 2px;
+            width: 52%;
+            animation: pulse-bar 2s ease-in-out infinite alternate;
+        }
+        @keyframes pulse-bar { from { opacity: 0.8; } to { opacity: 1; } }
+
+        /* Expanded download detail */
+        .dl-detail {
+            display: none;
+            flex-direction: column;
+            gap: 0;
+            margin: 4px 12px 8px 32px;
+            background: #111112;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 10px 12px;
+            cursor: pointer;
+        }
+        .dl-detail.open { display: flex; }
+
+        .dl-detail-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        .dl-arrow-icon { flex-shrink: 0; margin-top: 1px; }
+        .dl-filename {
+            font-size: 12px;
+            color: #fff;
+            line-height: 1.3;
+            word-break: break-all;
+            flex: 1;
+        }
+        .dl-folder {
+            font-size: 11px;
+            color: #8a8a8a;
+            margin-bottom: 8px;
+            padding-left: 22px;
+        }
+
+        .dl-progress-track {
+            height: 4px;
+            background: #2a2a2a;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+        .dl-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #7c6af7, #5b52d4);
+            border-radius: 2px;
+            width: 52%;
+            position: relative;
+            overflow: hidden;
+        }
+        .dl-progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; right: -100%; bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+            animation: shimmer 1.8s linear infinite;
+        }
+        @keyframes shimmer { from { transform: translateX(-30%); } to { transform: translateX(130%); } }
+
+        .dl-stats {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .dl-actions { display: flex; gap: 6px; }
+        .dl-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            background: #262729;
+            border: 1px solid #494a50;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #ccc;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .dl-btn:hover { background: #333; }
+
+        /* Canvas */
+        .canvas {
+            flex: 1;
+            background: #141414;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Floating panel base */
+        .fp {
+            position: absolute;
+            background: #171718;
+            border: 1px solid #494a50;
+            border-radius: 8px;
+            box-shadow: 1px 1px 8px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+        }
+
+        .breadcrumbs-wrap {
+            position: absolute; top: 4px; left: 4px;
+            display: flex; align-items: center; gap: 4px; padding: 4px; border-radius: 8px;
+        }
+        .mode-btn {
+            background: #262729; height: 40px;
+            display: flex; align-items: center; justify-content: center; gap: 4px;
+            padding: 8px 16px; border-radius: 8px; cursor: pointer;
+            box-shadow: 1px 1px 8px rgba(0,0,0,0.4); flex-shrink: 0;
+        }
+        .undo-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; }
+        .breadcrumb-item { display: flex; align-items: center; gap: 4px; height: 32px; padding: 4px 8px; border-radius: 8px; color: #8a8a8a; cursor: pointer; white-space: nowrap; }
+        .breadcrumb-item.current { color: #fff; }
+        .breadcrumb-sep { color: #8a8a8a; font-weight: bold; display: flex; align-items: center; justify-content: center; width: 4px; height: 32px; flex-shrink: 0; }
+
+        .run-actions { top: 4px; right: 314px; height: 48px; padding: 8px; gap: 8px; }
+        .btn-sec { background: #262729; height: 32px; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 8px; border-radius: 8px; cursor: pointer; white-space: nowrap; color: #fff; flex-shrink: 0; }
+
+        .run-menu { top: 4px; right: 4px; height: 48px; padding: 8px; gap: 8px; }
+        .run-btn-group { display: flex; align-items: center; background: #262729; border-radius: 8px; overflow: hidden; height: 32px; flex-shrink: 0; }
+        .batch-count { display: flex; align-items: center; padding: 8px 4px 8px 12px; color: #fff; }
+        .batch-arrows { display: flex; flex-direction: column; width: 20px; }
+        .batch-arrow { height: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .run-exec-btn { background: #0b8ce9; height: 32px; display: flex; align-items: center; gap: 4px; padding: 8px 16px; border-radius: 8px; cursor: pointer; color: #fff; }
+        .run-dropdown { background: #262729; height: 32px; width: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .stop-btn { background: #b33a3a; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; opacity: 0.3; cursor: pointer; flex-shrink: 0; }
+        .jobs-btn { background: #262729; height: 32px; display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 8px; color: #fff; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+        .panel-toggle { background: #262729; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; flex-shrink: 0; }
+
+        .minimap-wrap { position: absolute; bottom: 4px; right: 4px; display: flex; flex-direction: column; gap: 4px; }
+        .minimap-panel { background: #171718; border: 1px solid #494a50; border-radius: 8px; width: 248px; overflow: hidden; box-shadow: 1px 1px 8px rgba(0,0,0,0.4); }
+        .minimap-header { display: flex; align-items: center; justify-content: space-between; padding: 4px; height: 32px; }
+        .mini-hbtn { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; }
+        .minimap-divider { height: 1px; background: #494a50; }
+        .minimap-map { height: 165px; display: flex; align-items: center; justify-content: center; padding: 25px 40px; }
+        .minimap-nodes { position: relative; width: 163px; height: 115px; }
+        .minimap-toolbar { background: #171718; border: 1px solid #494a50; border-radius: 8px; display: flex; align-items: center; gap: 4px; padding: 4px; height: 41px; box-shadow: 1px 1px 8px rgba(0,0,0,0.4); }
+        .tbtn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; flex-shrink: 0; }
+        .tbtn.active { background: #494a50; }
+        .tsep { width: 1px; height: 27px; background: #494a50; flex-shrink: 0; }
+        .zoom-btn { display: flex; align-items: center; gap: 4px; height: 32px; padding: 8px; border-radius: 8px; cursor: pointer; color: #8a8a8a; white-space: nowrap; }
+
+        .canvas-stats { position: absolute; bottom: 4px; left: 4px; font-size: 11px; color: #55565e; opacity: 0.5; line-height: normal; }
+
+        /* Instance Bar */
+        .instance-bar {
+            position: absolute;
+            bottom: 12px;
+            left: 8px;
+            display: flex;
+            align-items: center;
+            height: 26px;
+            background: rgba(20, 20, 22, 0.88);
+            border: 1px solid #2e2e32;
+            border-radius: 20px;
+            z-index: 10;
+            backdrop-filter: blur(6px);
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .instance-bar-inner {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 2px 0 10px;
+            max-width: 220px;
+            transition: max-width 0.28s ease, padding 0.28s ease, opacity 0.2s ease;
+        }
+        .instance-bar.collapsed .instance-bar-inner {
+            max-width: 0;
+            padding: 0;
+            opacity: 0;
+        }
+        .instance-bar-dot {
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            background: #28c840;
+            flex-shrink: 0;
+        }
+        .instance-bar-name {
+            font-size: 11px;
+            color: #9fa2bd;
+            font-weight: 500;
+            letter-spacing: 0.01em;
+        }
+        .instance-bar-toggle {
+            width: 26px; height: 26px;
+            display: flex; align-items: center; justify-content: center;
+            border: none; background: transparent;
+            cursor: pointer; flex-shrink: 0; padding: 0;
+            border-radius: 50%;
+            transition: background 0.15s;
+        }
+        .instance-bar-toggle:hover { background: rgba(255,255,255,0.08); }
+        .instance-bar-toggle svg {
+            transition: transform 0.28s ease;
+        }
+        .instance-bar.collapsed .instance-bar-toggle svg {
+            transform: rotate(180deg);
+        }
+        .instance-bar-inner { cursor: pointer; }
+        .instance-bar-inner:hover .instance-bar-name { color: #e0e0e0; }
+
+        /* ── Settings Overlay ─────────────────────────────────────────────── */
+        .settings-overlay {
+            position: fixed; inset: 0; z-index: 900;
+            display: none;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(3px);
+            align-items: center; justify-content: center;
+        }
+        .settings-overlay.open { display: flex; }
+
+        .settings-panel {
+            width: 860px;
+            max-width: calc(100vw - 48px);
+            height: 640px;
+            max-height: calc(100vh - 80px);
+            background: #1a1a1b;
+            border: 1px solid #2a2a2e;
+            border-radius: 14px;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.75), 0 4px 16px rgba(0,0,0,0.4);
+            display: flex;
+            overflow: hidden;
+        }
+
+        .settings-sidebar {
+            width: 190px; flex-shrink: 0;
+            background: #141415;
+            border-right: 1px solid #222225;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        .settings-sidebar-header {
+            display: flex; align-items: center; gap: 9px;
+            padding: 18px 16px 12px;
+            font-size: 14px; font-weight: 600; color: #e0e0e0; flex-shrink: 0;
+        }
+        .settings-search {
+            margin: 0 10px 10px; position: relative; flex-shrink: 0;
+        }
+        .settings-search input {
+            width: 100%; background: #1a1a1c; border: 1px solid #232326;
+            border-radius: 7px; padding: 7px 10px 7px 28px;
+            color: #6a6a72; font-size: 12px; font-family: inherit; outline: none;
+        }
+        .settings-search input::placeholder { color: #3a3a40; }
+        .settings-search-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); }
+
+        .settings-nav { flex: 1; overflow-y: auto; padding: 4px 0 16px; }
+        .settings-nav::-webkit-scrollbar { width: 3px; }
+        .settings-nav::-webkit-scrollbar-thumb { background: #232326; border-radius: 2px; }
+
+        .settings-nav-label {
+            padding: 12px 16px 3px; font-size: 9px; font-weight: 700;
+            color: #3a3a42; letter-spacing: 0.09em; text-transform: uppercase;
+        }
+        .settings-nav-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 7px 12px; margin: 1px 6px;
+            border-radius: 7px; cursor: pointer; font-size: 13px; color: #7a7a84;
+            transition: background 0.12s, color 0.12s; user-select: none;
+        }
+        .settings-nav-item:hover { background: rgba(255,255,255,0.04); color: #c0c0c8; }
+        .settings-nav-item.active { background: #252528; color: #e0e0e0; }
+
+        .settings-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .settings-close-wrap { position: absolute; top: 14px; right: 16px; z-index: 10; }
+        .settings-close-btn {
+            width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+            border: 1px solid #2e2e32; border-radius: 7px; background: #1e1e20;
+            cursor: pointer; transition: background 0.15s;
+        }
+        .settings-close-btn:hover { background: #2a2a2d; }
+
+        .settings-content { flex: 1; overflow-y: auto; padding: 28px 48px 60px 40px; }
+        .settings-content::-webkit-scrollbar { width: 4px; }
+        .settings-content::-webkit-scrollbar-thumb { background: #232326; border-radius: 2px; }
+
+        .setting-section { padding-bottom: 4px; }
+        .setting-section-title {
+            font-size: 15px; font-weight: 600; color: #e4e4ea;
+            padding: 20px 0 10px; letter-spacing: -0.01em;
+        }
+        .setting-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 13px 0; gap: 20px;
+            border-top: 1px solid #1e1e22;
+        }
+        .setting-label {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 13px; color: #b0b0bc; flex: 1;
+        }
+        .setting-beta {
+            width: 18px; height: 18px; border-radius: 4px;
+            background: rgba(11,140,233,0.15);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .setting-info { color: #2e2e36; flex-shrink: 0; cursor: help; }
+
+        /* Toggle */
+        .s-toggle { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; cursor: pointer; }
+        .s-toggle input { display: none; }
+        .s-toggle-track {
+            position: absolute; inset: 0; background: #2e2e36; border-radius: 12px; transition: background 0.2s;
+        }
+        .s-toggle-track::before {
+            content: ''; position: absolute;
+            width: 18px; height: 18px; left: 3px; top: 3px;
+            background: #fff; border-radius: 50%;
+            transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+        .s-toggle input:checked + .s-toggle-track { background: #0b8ce9; }
+        .s-toggle input:checked + .s-toggle-track::before { transform: translateX(20px); }
+
+        /* Select */
+        .s-select {
+            background: #1c1c1e; border: 1px solid #2e2e36; border-radius: 7px;
+            padding: 7px 30px 7px 12px; color: #c0c0c8; font-size: 12px;
+            font-family: inherit; outline: none; cursor: pointer;
+            appearance: none; -webkit-appearance: none; flex-shrink: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23494a54' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 9px center;
+            min-width: 150px;
+        }
+        .s-select:focus { border-color: #3e3e46; }
+
+        /* Slider */
+        .s-slider-wrap { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+        .s-slider {
+            width: 80px; height: 3px; appearance: none; -webkit-appearance: none;
+            background: #2e2e36; border-radius: 2px; outline: none; cursor: pointer;
+        }
+        .s-slider::-webkit-slider-thumb {
+            appearance: none; -webkit-appearance: none;
+            width: 14px; height: 14px; border-radius: 50%;
+            background: #8a8a96; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+        .s-number {
+            width: 62px; background: #1c1c1e; border: 1px solid #2e2e36;
+            border-radius: 6px; padding: 5px 8px; color: #c0c0c8; font-size: 12px;
+            font-family: inherit; outline: none; text-align: right;
+        }
+        .s-number:focus { border-color: #3e3e46; }
+
+        /* Placeholder for other tabs */
+        .settings-placeholder {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            color: #2e2e36; font-size: 13px; gap: 8px;
+        }
+
+        /* ── Instance settings tab ────────────────────────────────────────── */
+        .inst-list-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 20px 0 12px;
+        }
+        .inst-list-title { font-size: 15px; font-weight: 600; color: #e4e4ea; letter-spacing: -0.01em; }
+        .inst-new-btn {
+            display: flex; align-items: center; gap: 6px;
+            padding: 7px 14px; border-radius: 7px;
+            background: #1e1e22; border: 1px solid #2e2e36;
+            color: #9fa2bd; font-size: 12px; font-weight: 500;
+            cursor: pointer; font-family: inherit; transition: background 0.15s, color 0.15s;
+        }
+        .inst-new-btn:hover { background: #262629; color: #e0e0e0; }
+
+        .inst-row {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 16px; border-radius: 10px;
+            cursor: pointer; transition: background 0.12s; margin-bottom: 4px;
+        }
+        .inst-row:hover { background: rgba(255,255,255,0.04); }
+        .inst-row.current { background: rgba(11,140,233,0.07); }
+
+        .inst-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .inst-dot.online  { background: #28c840; }
+        .inst-dot.offline { background: #3a3a3e; }
+
+        .inst-info { flex: 1; min-width: 0; }
+        .inst-name { font-size: 13px; font-weight: 500; color: #e0e0e0; }
+        .inst-meta { font-size: 11px; color: #494a54; margin-top: 2px; }
+
+        .inst-badge {
+            font-size: 9px; padding: 3px 7px; border-radius: 5px; flex-shrink: 0;
+            text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;
+            border: 1px solid #2e2e36; color: #494a54;
+        }
+        .inst-badge.active { color: #0b8ce9; border-color: rgba(11,140,233,0.3); background: rgba(11,140,233,0.1); }
+        .inst-badge.cloud  { color: #7c6af7; border-color: rgba(124,106,247,0.3); background: rgba(124,106,247,0.08); }
+
+        .inst-connect-btn {
+            padding: 5px 12px; border-radius: 6px; font-size: 11px;
+            background: transparent; border: 1px solid #2e2e36;
+            color: #7a7a84; cursor: pointer; font-family: inherit;
+            transition: background 0.15s, color 0.15s;
+        }
+        .inst-connect-btn:hover { background: #262629; color: #e0e0e0; }
+
+        /* Wizard inside settings */
+        .inst-wizard-header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 20px 0 16px;
+        }
+        .inst-back-btn {
+            display: flex; align-items: center; gap: 5px;
+            background: none; border: none; cursor: pointer; font-family: inherit;
+            color: #7a7a84; font-size: 12px; padding: 5px 8px; border-radius: 6px;
+            transition: color 0.15s, background 0.15s;
+        }
+        .inst-back-btn:hover { color: #e0e0e0; background: rgba(255,255,255,0.05); }
+        .inst-wizard-title { font-size: 15px; font-weight: 600; color: #e4e4ea; }
+        .inst-step-label { font-size: 11px; color: #3a3a42; margin-left: auto; }
+
+        .inst-wizard-q { font-size: 12px; color: #7a7a84; margin-bottom: 14px; }
+
+        .inst-env-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .inst-env-card {
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            padding: 18px 12px; border-radius: 10px;
+            border: 1px solid #2e2e36; cursor: pointer;
+            transition: border-color 0.15s, background 0.15s; text-align: center;
+        }
+        .inst-env-card:hover { border-color: #494a50; background: rgba(255,255,255,0.03); }
+        .inst-env-card.selected { border-color: #0b8ce9; background: rgba(11,140,233,0.07); }
+        .inst-env-icon {
+            width: 36px; height: 36px; border-radius: 9px;
+            background: rgba(255,255,255,0.05);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .inst-env-card.selected .inst-env-icon { background: rgba(11,140,233,0.14); }
+        .inst-env-name { font-size: 12px; font-weight: 500; color: #e0e0e0; }
+        .inst-env-desc { font-size: 10px; color: #494a54; margin-top: 1px; }
+
+        .inst-field-label { font-size: 11px; color: #7a7a84; margin-bottom: 6px; font-weight: 500; }
+        .inst-field-wrap { display: flex; gap: 8px; margin-bottom: 14px; }
+        .inst-input {
+            flex: 1; background: #141416; border: 1px solid #2e2e36;
+            border-radius: 8px; padding: 9px 12px;
+            color: #e0e0e0; font-size: 13px; font-family: inherit; outline: none;
+            transition: border-color 0.15s;
+        }
+        .inst-input:focus { border-color: #0b8ce9; }
+        .inst-input::placeholder { color: #3a3a3e; }
+        select.inst-input { cursor: pointer; appearance: none; -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23494a54' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px;
+        }
+        .inst-browse {
+            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+            background: #1e1e20; border: 1px solid #2e2e36;
+            border-radius: 8px; cursor: pointer; flex-shrink: 0; transition: background 0.15s;
+        }
+        .inst-browse:hover { background: #262629; }
+
+        .inst-wizard-nav {
+            display: flex; justify-content: flex-end; margin-top: 8px;
+        }
+        .inst-next-btn {
+            display: flex; align-items: center; gap: 6px;
+            padding: 9px 20px; border-radius: 8px;
+            background: #0b8ce9; border: none;
+            color: #fff; font-size: 13px; font-weight: 500;
+            cursor: pointer; font-family: inherit; transition: background 0.15s;
+        }
+        .inst-next-btn:hover { background: #0a7fd4; }
+        .inst-next-btn:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
+        .inst-next-btn.green { background: #28c840; }
+        .inst-next-btn.green:hover { background: #23b438; }
+
+        .inst-done-body {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 10px; padding: 48px 0; text-align: center;
+        }
+        .inst-done-icon {
+            width: 48px; height: 48px; border-radius: 50%;
+            background: rgba(40,200,64,0.12); border: 1px solid rgba(40,200,64,0.25);
+            display: flex; align-items: center; justify-content: center; margin-bottom: 4px;
+        }
+        .inst-done-title { font-size: 15px; font-weight: 600; color: #e0e0e0; }
+        .inst-done-sub   { font-size: 12px; color: #494a54; }
+
+        /* Hide the old floating instance manager */
+        .instance-manager { display: none !important; }
+
+        /* ── Instance Manager ──────────────────────────────────────────────── */
+        .instance-manager {
+            position: absolute;
+            bottom: 48px;
+            left: 8px;
+            width: 280px;
+            background: #171718;
+            border: 1px solid #2e2e32;
+            border-radius: 12px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.4);
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .instance-manager.open { display: flex; }
+
+        .im-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 13px 14px 11px;
+            border-bottom: 1px solid #2e2e32;
+            flex-shrink: 0;
+        }
+        .im-title {
+            font-size: 12px; font-weight: 600; color: #e0e0e0;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .im-close {
+            width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+            border-radius: 5px; cursor: pointer; border: none;
+            background: transparent; color: #9fa2bd; transition: background 0.15s;
+        }
+        .im-close:hover { background: rgba(255,255,255,0.08); }
+
+        .im-list { display: flex; flex-direction: column; padding: 6px 0; }
+        .im-instance-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 14px; cursor: pointer; transition: background 0.15s;
+        }
+        .im-instance-row:hover { background: rgba(255,255,255,0.04); }
+        .im-instance-row.current { background: rgba(11,140,233,0.07); }
+
+        .im-status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+        .im-status-dot.online  { background: #28c840; }
+        .im-status-dot.offline { background: #3a3a3e; }
+
+        .im-instance-info { flex: 1; min-width: 0; }
+        .im-instance-name {
+            font-size: 12px; font-weight: 500; color: #e0e0e0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .im-instance-meta { font-size: 10px; color: #494a50; margin-top: 1px; }
+
+        .im-badge {
+            font-size: 9px; padding: 2px 6px; border-radius: 4px;
+            flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.04em;
+            border: 1px solid #2e2e32; color: #494a50;
+        }
+        .im-badge.active { color: #0b8ce9; border-color: rgba(11,140,233,0.3); background: rgba(11,140,233,0.1); }
+        .im-badge.cloud  { color: #7c6af7; border-color: rgba(124,106,247,0.3); background: rgba(124,106,247,0.08); }
+
+        .im-footer { padding: 8px 10px 10px; border-top: 1px solid #2e2e32; flex-shrink: 0; }
+        .im-new-btn {
+            width: 100%; display: flex; align-items: center; justify-content: center;
+            gap: 6px; padding: 8px; border-radius: 8px;
+            border: 1px dashed #2e2e32; background: transparent;
+            color: #9fa2bd; font-size: 12px; cursor: pointer; font-family: inherit;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }
+        .im-new-btn:hover { background: rgba(255,255,255,0.04); border-color: #494a50; color: #e0e0e0; }
+
+        /* Wizard shared */
+        .im-wizard-body { padding: 14px 14px 6px; display: flex; flex-direction: column; gap: 8px; }
+        .im-wizard-label {
+            font-size: 10px; color: #494a50; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 2px;
+        }
+        .im-wizard-nav {
+            display: flex; justify-content: flex-end; align-items: center;
+            padding: 10px 14px 14px; gap: 8px;
+        }
+        .im-wizard-back {
+            display: flex; align-items: center; gap: 4px; font-size: 12px; color: #9fa2bd;
+            background: transparent; border: none; cursor: pointer; font-family: inherit;
+            padding: 6px 8px; border-radius: 6px; transition: color 0.15s, background 0.15s;
+        }
+        .im-wizard-back:hover { color: #e0e0e0; background: rgba(255,255,255,0.05); }
+        .im-wizard-next {
+            display: flex; align-items: center; gap: 5px;
+            font-size: 12px; color: #fff; font-weight: 500;
+            background: #0b8ce9; border: none; cursor: pointer; font-family: inherit;
+            padding: 7px 14px; border-radius: 7px; transition: background 0.15s;
+        }
+        .im-wizard-next:hover { background: #0a7fd4; }
+        .im-wizard-next:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+
+        /* Step 1: environment cards */
+        .im-env-card {
+            display: flex; align-items: center; gap: 12px;
+            padding: 11px 12px; border-radius: 8px;
+            border: 1px solid #2e2e32; cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .im-env-card:hover { border-color: #494a50; background: rgba(255,255,255,0.03); }
+        .im-env-card.selected { border-color: #0b8ce9; background: rgba(11,140,233,0.07); }
+        .im-env-icon {
+            width: 30px; height: 30px; border-radius: 7px;
+            background: rgba(255,255,255,0.05);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .im-env-card.selected .im-env-icon { background: rgba(11,140,233,0.14); }
+        .im-env-name { font-size: 12px; font-weight: 500; color: #e0e0e0; }
+        .im-env-desc { font-size: 10px; color: #494a50; margin-top: 2px; }
+
+        /* Step 2: inputs */
+        .im-input-wrap { display: flex; gap: 6px; }
+        .im-input {
+            flex: 1; background: #0e0e10; border: 1px solid #2e2e32;
+            border-radius: 7px; padding: 7px 10px;
+            color: #e0e0e0; font-size: 12px; font-family: inherit; outline: none;
+            transition: border-color 0.15s;
+        }
+        .im-input:focus { border-color: #0b8ce9; }
+        .im-input::placeholder { color: #3a3a3e; }
+        select.im-input { cursor: pointer; }
+        .im-browse {
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            background: #1e1e20; border: 1px solid #2e2e32;
+            border-radius: 7px; cursor: pointer; flex-shrink: 0; transition: background 0.15s;
+        }
+        .im-browse:hover { background: #262629; }
+        .im-hint { font-size: 10px; color: #3a3a3e; }
+
+        /* Done screen */
+        .im-done-body {
+            padding: 28px 14px 20px; display: flex; flex-direction: column;
+            align-items: center; gap: 8px; text-align: center;
+        }
+        .im-done-icon {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(40,200,64,0.12); border: 1px solid rgba(40,200,64,0.25);
+            display: flex; align-items: center; justify-content: center; margin-bottom: 2px;
+        }
+        .im-done-title { font-size: 13px; font-weight: 600; color: #e0e0e0; }
+        .im-done-sub   { font-size: 11px; color: #494a50; }
+
+        /* ── C Logo Menu ───────────────────────────────────────────────────── */
+        .c-menu {
+            position: fixed;
+            top: 72px;
+            left: 84px;
+            width: 268px;
+            background: #171718;
+            border: 1px solid #2e2e32;
+            border-radius: 12px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2), 0 8px 32px rgba(0,0,0,0.55);
+            z-index: 500;
+            padding: 12px 0;
+            display: none;
+            flex-direction: column;
+        }
+        .c-menu.open { display: flex; }
+
+        .c-menu-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 12px;
+            cursor: pointer;
+            gap: 8px;
+        }
+        .c-menu-row:hover { background: rgba(255,255,255,0.05); }
+        .c-menu-row-text {
+            font-size: 12px;
+            color: #9fa2bd;
+            flex: 1;
+        }
+
+        .c-menu-divider { height: 1px; background: #2e2e32; margin: 4px 0; }
+
+        .c-menu-section { display: flex; flex-direction: column; gap: 0; }
+
+        .c-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 7px 16px;
+            cursor: pointer;
+            min-height: 30px;
+        }
+        .c-menu-item:hover { background: rgba(255,255,255,0.05); }
+        .c-menu-item-text {
+            flex: 1;
+            font-size: 12px;
+            color: #9fa2bd;
+            min-width: 0;
+        }
+        .c-menu-item-chevron { flex-shrink: 0; opacity: 0.5; }
+
+        /* Theme row */
+        .c-menu-theme-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px;
+        }
+        .c-menu-theme-label { font-size: 12px; color: #9fa2bd; }
+        .c-menu-theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            background: #0e0e12;
+            border: 1px solid #15161c;
+            border-radius: 8px;
+            padding: 4px;
+        }
+        .c-menu-theme-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #9fa2bd;
+            cursor: pointer;
+            white-space: nowrap;
+            border: none;
+            background: transparent;
+            font-family: inherit;
+        }
+        .c-menu-theme-btn.active {
+            background: #0b8ce9;
+            color: #fff;
+        }
+
+        .nav-overlay { position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); padding: 10px 20px; border-radius: 8px; border: 1px solid #494a50; z-index: 1000; display: flex; align-items: center; gap: 16px; }
+        .nav-overlay a { color: #0b8ce9; text-decoration: none; font-size: 13px; }
+        .nav-sep { color: #494a50; font-size: 13px; }
+        .replay-btn { background: #262729; border: 1px solid #494a50; border-radius: 6px; color: #ccc; font-size: 13px; padding: 4px 10px; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 6px; transition: background 0.15s; }
+        .replay-btn:hover { background: #333; color: #fff; }
+    </style>
+</head>
+<body>
+<div class="app">
+
+    <!-- Title Bar -->
+    <div class="title-bar">
+        <div class="window-controls">
+            <button class="wc-btn wc-close"></button>
+            <button class="wc-btn wc-minimize"></button>
+            <button class="wc-btn wc-zoom"></button>
+        </div>
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+        <div class="tab-bar-left">
+            <div class="workflow-tab"><span>Tab</span></div>
+            <div class="workflow-tab">
+                <span>Tab</span>
+                <div class="tab-close-btn"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 3L9 9M9 3L3 9" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+            </div>
+            <div class="workflow-tab active">
+                <span>Current Workflow</span>
+                <div class="tab-close-btn"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 3L9 9M9 3L3 9" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+            </div>
+            <div class="workflow-tab"><span>Tab</span></div>
+            <div class="tab-add-btn"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3V13M3 8H13" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+        </div>
+        <div class="tab-bar-right">
+            <div class="icon-btn">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M2 2.5H14C14.3 2.5 14.5 2.7 14.5 3V10C14.5 10.3 14.3 10.5 14 10.5H5L2 13.5V3C2 2.7 2.2 2.5 2.5 2.5Z" stroke="#8a8a8a" stroke-width="1.5" stroke-linejoin="round"/>
+                    <path d="M5 6H11M5 8H9" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div class="user-btn">
+                <div class="user-avatar">U</div>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- C Logo Dropdown Menu -->
+    <div class="c-menu" id="c-menu">
+        <!-- New Workflow -->
+        <div class="c-menu-row">
+            <span class="c-menu-row-text">New Workflow</span>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2.5V11.5M2.5 7H11.5" stroke="#9fa2bd" stroke-width="1.4" stroke-linecap="round"/></svg>
+        </div>
+        <div class="c-menu-divider"></div>
+        <!-- File / Edit / View -->
+        <div class="c-menu-section">
+            <div class="c-menu-item">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 2H8.5L11 4.5V12H4V2Z" stroke="#9fa2bd" stroke-width="1.2" stroke-linejoin="round"/><path d="M8.5 2V4.5H11" stroke="#9fa2bd" stroke-width="1.2" stroke-linejoin="round"/></svg>
+                <span class="c-menu-item-text">File</span>
+                <svg class="c-menu-item-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 3L7.5 6L4.5 9" stroke="#9fa2bd" stroke-width="1.3" stroke-linecap="round"/></svg>
+            </div>
+            <div class="c-menu-item">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 4.5H9M2 7H9M2 9.5H6" stroke="#9fa2bd" stroke-width="1.2" stroke-linecap="round"/><path d="M11 6L13 8L11 10" stroke="#9fa2bd" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="c-menu-item-text">Edit</span>
+                <svg class="c-menu-item-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 3L7.5 6L4.5 9" stroke="#9fa2bd" stroke-width="1.3" stroke-linecap="round"/></svg>
+            </div>
+            <div class="c-menu-item">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="3" width="11" height="8" rx="1" stroke="#9fa2bd" stroke-width="1.2"/><circle cx="7" cy="7" r="2" stroke="#9fa2bd" stroke-width="1.2"/></svg>
+                <span class="c-menu-item-text">View</span>
+                <svg class="c-menu-item-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 3L7.5 6L4.5 9" stroke="#9fa2bd" stroke-width="1.3" stroke-linecap="round"/></svg>
+            </div>
+        </div>
+        <div class="c-menu-divider"></div>
+        <!-- Theme toggle -->
+        <div class="c-menu-theme-row">
+            <span class="c-menu-theme-label">Theme</span>
+            <div class="c-menu-theme-toggle">
+                <button class="c-menu-theme-btn active" onclick="setTheme('dark', this)">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10 6.5C9.5 8.7 7.5 10 5.3 9.6C3.1 9.2 1.8 7.2 2.2 5C2.5 3.4 3.7 2.2 5.3 2C4.5 3.1 4.4 4.7 5.3 5.9C6.1 7.1 7.5 7.6 8.9 7.2C9.4 6.8 9.8 6.6 10 6.5Z" stroke="#fff" stroke-width="1.1" stroke-linejoin="round"/></svg>
+                    Dark
+                </button>
+                <button class="c-menu-theme-btn" onclick="setTheme('light', this)">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="2.2" stroke="#9fa2bd" stroke-width="1.1"/><path d="M6 1.5V2.5M6 9.5V10.5M1.5 6H2.5M9.5 6H10.5M2.9 2.9L3.6 3.6M8.4 8.4L9.1 9.1M9.1 2.9L8.4 3.6M3.6 8.4L2.9 9.1" stroke="#9fa2bd" stroke-width="1.1" stroke-linecap="round"/></svg>
+                    Light
+                </button>
+            </div>
+        </div>
+        <div class="c-menu-divider"></div>
+        <!-- Browse Templates / Settings / Manage Extensions -->
+        <div class="c-menu-section">
+            <div class="c-menu-item">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="2.5" width="11" height="9" rx="1" stroke="#9fa2bd" stroke-width="1.2"/><rect x="3" y="4.5" width="3" height="5" rx="0.5" stroke="#9fa2bd" stroke-width="1"/><path d="M8 5H11M8 7.5H11M8 10H11" stroke="#9fa2bd" stroke-width="1" stroke-linecap="round"/></svg>
+                <span class="c-menu-item-text">Browse Templates</span>
+            </div>
+            <div class="c-menu-item">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="2" stroke="#9fa2bd" stroke-width="1.2"/><path d="M7 1.5V3M7 11V12.5M1.5 7H3M11 7H12.5M3.05 3.05L4.1 4.1M9.9 9.9L10.95 10.95M10.95 3.05L9.9 4.1M4.1 9.9L3.05 10.95" stroke="#9fa2bd" stroke-width="1.2" stroke-linecap="round"/></svg>
+                <span class="c-menu-item-text" onclick="openSettings('comfy')">Settings</span>
+            </div>
+            <div class="c-menu-item">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5.5 3H3C2.4 3 2 3.4 2 4V10C2 10.6 2.4 11 3 11H11C11.6 11 12 10.6 12 10V6C12 5.4 11.6 5 11 5H8L6.5 3H5.5Z" stroke="#9fa2bd" stroke-width="1.2" stroke-linejoin="round"/><path d="M7 7V9M6 8H8" stroke="#9fa2bd" stroke-width="1.2" stroke-linecap="round"/></svg>
+                <span class="c-menu-item-text">Manage Extensions</span>
+            </div>
+        </div>
+        <div class="c-menu-divider"></div>
+        <!-- Help -->
+        <div class="c-menu-item">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="#9fa2bd" stroke-width="1.2"/><path d="M5.5 5.5C5.7 4.7 6.3 4.2 7 4.2C7.9 4.2 8.7 5 8.7 5.9C8.7 6.6 8.2 7.2 7.6 7.5C7.2 7.7 7 8 7 8.5" stroke="#9fa2bd" stroke-width="1.2" stroke-linecap="round"/><circle cx="7" cy="10" r="0.6" fill="#9fa2bd"/></svg>
+            <span class="c-menu-item-text">Help</span>
+            <svg class="c-menu-item-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 3L7.5 6L4.5 9" stroke="#9fa2bd" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+        <!-- Icon Sidebar -->
+        <div class="icon-sidebar">
+            <div class="sidebar-top">
+                <div class="c-logo-btn" id="c-logo-btn" onclick="toggleCMenu(event)">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M11.5 4C10.3 2.3 8.3 1.3 6.1 1.8C3.5 2.4 1.7 4.8 1.7 7.5C1.7 10.2 3.5 12.4 6 13C8.2 13.5 10.3 12.5 11.5 10.8" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </div>
+                <div class="sidebar-icon-btn">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <rect x="1.5" y="3" width="9" height="7.5" rx="1" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <path d="M3 8.5L4.5 7L6 8.5" stroke="#8a8a8a" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="4" cy="5.8" r="0.8" fill="#8a8a8a"/>
+                        <path d="M12 1L13 3L15 4L13 5L12 7L11 5L9 4L11 3L12 1Z" stroke="#8a8a8a" stroke-width="1" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Assets</span>
+                </div>
+                <div class="sidebar-icon-btn">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <rect x="1.5" y="5.5" width="4.5" height="3" rx="0.75" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <rect x="10" y="3" width="4.5" height="3" rx="0.75" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <rect x="10" y="10" width="4.5" height="3" rx="0.75" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <path d="M6 7H8C8 7 8 4.5 10 4.5" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/>
+                        <path d="M6 7H8C8 7 8 11.5 10 11.5" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <span>Nodes</span>
+                </div>
+                <!-- Models — clickable to toggle panel -->
+                <div class="sidebar-icon-btn" id="models-btn" onclick="toggleModelPanel()">
+                    <div class="sidebar-dl-badge" id="sidebar-dl-badge"></div>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <rect x="2" y="2" width="4.5" height="4.5" rx="0.75" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <rect x="9.5" y="2" width="4.5" height="4.5" rx="0.75" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <rect x="2" y="9.5" width="4.5" height="4.5" rx="0.75" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <path d="M11.75 9.5V14.5M9.25 12H14.25" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <span>Models</span>
+                </div>
+                <div class="sidebar-icon-btn">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <circle cx="3" cy="8" r="1.5" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <circle cx="8" cy="4" r="1.5" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <circle cx="8" cy="12" r="1.5" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <circle cx="13" cy="8" r="1.5" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <path d="M4.5 8H6.5M9.5 4.5L11.5 7M9.5 11.5L11.5 9" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <span>Workflows</span>
+                </div>
+                <div class="sidebar-icon-btn">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <rect x="2" y="2.5" width="12" height="11" rx="1" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <path d="M2 6H14" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <path d="M7 6V13.5" stroke="#8a8a8a" stroke-width="1.5"/>
+                    </svg>
+                    <span>Apps</span>
+                </div>
+                <div class="sidebar-icon-btn">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <rect x="2" y="3" width="12" height="10" rx="1" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <rect x="4" y="5.5" width="3.5" height="5" rx="0.5" stroke="#8a8a8a" stroke-width="1.2"/>
+                        <path d="M9.5 6H12M9.5 8.5H12M9.5 11H12" stroke="#8a8a8a" stroke-width="1.2" stroke-linecap="round"/>
+                    </svg>
+                    <span>Templates</span>
+                </div>
+            </div>
+            <div class="sidebar-bottom">
+                <div class="sidebar-icon-btn">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <circle cx="8" cy="8" r="6" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <path d="M6.3 6C6.5 5.1 7.2 4.5 8 4.5C9.1 4.5 10 5.4 10 6.5C10 7.3 9.5 8 8.8 8.3C8.4 8.5 8 8.9 8 9.5" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/>
+                        <circle cx="8" cy="11.5" r="0.75" fill="#8a8a8a"/>
+                    </svg>
+                    <span>Help</span>
+                </div>
+                <div class="sidebar-icon-btn">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <rect x="2" y="3" width="12" height="10" rx="1.5" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <path d="M5 7L7.5 9L5 11" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M9 11H11" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <span>Console</span>
+                </div>
+                <div class="sidebar-icon-btn">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <rect x="1.5" y="4" width="13" height="9" rx="1" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <rect x="3.5" y="6" width="2" height="2" rx="0.4" stroke="#8a8a8a" stroke-width="1"/>
+                        <rect x="7" y="6" width="2" height="2" rx="0.4" stroke="#8a8a8a" stroke-width="1"/>
+                        <rect x="10.5" y="6" width="2" height="2" rx="0.4" stroke="#8a8a8a" stroke-width="1"/>
+                        <rect x="5" y="9" width="6" height="2" rx="0.4" stroke="#8a8a8a" stroke-width="1"/>
+                    </svg>
+                    <span>Shortcuts</span>
+                </div>
+                <div class="sidebar-icon-btn" onclick="openSettings('comfy')">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <circle cx="8" cy="8" r="2" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <path d="M8 1.5V3M8 13V14.5M1.5 8H3M13 8H14.5M3.2 3.2L4.3 4.3M11.7 11.7L12.8 12.8M12.8 3.2L11.7 4.3M4.3 11.7L3.2 12.8" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <span>Settings</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Model Library Panel -->
+        <div class="model-panel" id="model-panel">
+            <!-- Header -->
+            <div class="mp-header">
+                <span class="mp-title">Model Library</span>
+                <div class="mp-header-actions">
+                    <div class="mp-icon-btn">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M13.5 8C13.5 11.1 11 13.5 8 13.5C5 13.5 2.5 11 2.5 8C2.5 5 5 2.5 8 2.5C9.8 2.5 11.4 3.4 12.4 4.8" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/>
+                            <path d="M10.5 2L12.5 4.5L10 5.5" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="mp-icon-btn">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 2V10M8 10L5 7M8 10L11 7" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M2 13H14" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search -->
+            <div class="mp-search">
+                <div class="mp-search-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <circle cx="6" cy="6" r="4" stroke="#55565e" stroke-width="1.5"/>
+                        <path d="M9.5 9.5L12 12" stroke="#55565e" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <input type="text" placeholder="Search Models...">
+            </div>
+
+            <div class="mp-divider"></div>
+
+            <!-- Folder tree -->
+            <div class="mp-tree">
+                <!-- checkpoints -->
+                <div class="tree-row">
+                    <div class="tree-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tree-folder"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3C1 2.4 1.4 2 2 2H5.5L7 3.5H12C12.6 3.5 13 3.9 13 4.5V11C13 11.6 12.6 12 12 12H2C1.4 12 1 11.6 1 11V3Z" stroke="#666" stroke-width="1.3"/></svg></div>
+                    <span class="tree-name">checkpoints</span>
+                </div>
+                <!-- loras -->
+                <div class="tree-row">
+                    <div class="tree-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tree-folder"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3C1 2.4 1.4 2 2 2H5.5L7 3.5H12C12.6 3.5 13 3.9 13 4.5V11C13 11.6 12.6 12 12 12H2C1.4 12 1 11.6 1 11V3Z" stroke="#666" stroke-width="1.3"/></svg></div>
+                    <span class="tree-name">loras</span>
+                </div>
+                <!-- vae -->
+                <div class="tree-row">
+                    <div class="tree-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tree-folder"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3C1 2.4 1.4 2 2 2H5.5L7 3.5H12C12.6 3.5 13 3.9 13 4.5V11C13 11.6 12.6 12 12 12H2C1.4 12 1 11.6 1 11V3Z" stroke="#666" stroke-width="1.3"/></svg></div>
+                    <span class="tree-name">vae</span>
+                </div>
+                <!-- text_encoders -->
+                <div class="tree-row">
+                    <div class="tree-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tree-folder"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3C1 2.4 1.4 2 2 2H5.5L7 3.5H12C12.6 3.5 13 3.9 13 4.5V11C13 11.6 12.6 12 12 12H2C1.4 12 1 11.6 1 11V3Z" stroke="#666" stroke-width="1.3"/></svg></div>
+                    <span class="tree-name">text_encoders</span>
+                </div>
+                <!-- diffusion_models — has active download -->
+                <div class="tree-row expanded" id="diffusion-row" onclick="toggleFolder()">
+                    <div class="tree-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="#aaa" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tree-folder"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3C1 2.4 1.4 2 2 2H5.5L7 3.5H12C12.6 3.5 13 3.9 13 4.5V11C13 11.6 12.6 12 12 12H2C1.4 12 1 11.6 1 11V3Z" stroke="#aaa" stroke-width="1.3"/></svg></div>
+                    <span class="tree-name">diffusion_models</span>
+                    <div class="dl-badge"></div>
+                </div>
+                <!-- Download item inside diffusion_models -->
+                <div class="dl-item-wrap open" id="dl-item-wrap">
+                    <!-- Collapsed state: click to expand detail -->
+                    <div class="dl-item-collapsed" id="dl-collapsed" onclick="toggleDownloadDetail(event)">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <path d="M6 1V7M6 7L3.5 4.5M6 7L8.5 4.5" stroke="#7c6af7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M1 10H11" stroke="#7c6af7" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#bbb;">qwen_image_edit_2509_fp8…</span>
+                        <div class="dl-mini-bar-wrap">
+                            <div class="dl-mini-bar" id="mini-bar"></div>
+                        </div>
+                        <span id="mini-pct" style="color:#7c6af7;font-size:11px;flex-shrink:0;">52%</span>
+                    </div>
+                    <!-- Expanded download detail -->
+                    <div class="dl-detail" id="dl-detail" onclick="toggleDownloadDetail(event)">
+                        <div class="dl-detail-header">
+                            <div class="dl-arrow-icon" id="dl-arrow-icon">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                    <path d="M7 1V9M7 9L4 6M7 9L10 6" stroke="#7c6af7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M1 12H13" stroke="#7c6af7" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <div class="dl-filename">qwen_image_edit_2509_fp8_e4m3fn.safetensors</div>
+                        </div>
+                        <div class="dl-folder">diffusion_models</div>
+                        <div class="dl-progress-track">
+                            <div class="dl-progress-fill" id="full-bar"></div>
+                        </div>
+                        <div class="dl-stats" id="dl-stats-text">9.86 GB / 19.03 GB · 52% · 4.7 MB/s · 33m 32s</div>
+                        <div class="dl-actions" id="dl-actions-wrap">
+                            <button class="dl-btn">
+                                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><rect x="2" y="1.5" width="2" height="7" rx="0.5" fill="#ccc"/><rect x="6" y="1.5" width="2" height="7" rx="0.5" fill="#ccc"/></svg>
+                                Pause
+                            </button>
+                            <button class="dl-btn">
+                                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 2L8 8M8 2L2 8" stroke="#ccc" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- clip_vision -->
+                <div class="tree-row">
+                    <div class="tree-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tree-folder"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3C1 2.4 1.4 2 2 2H5.5L7 3.5H12C12.6 3.5 13 3.9 13 4.5V11C13 11.6 12.6 12 12 12H2C1.4 12 1 11.6 1 11V3Z" stroke="#666" stroke-width="1.3"/></svg></div>
+                    <span class="tree-name">clip_vision</span>
+                </div>
+                <div class="tree-row">
+                    <div class="tree-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tree-folder"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3C1 2.4 1.4 2 2 2H5.5L7 3.5H12C12.6 3.5 13 3.9 13 4.5V11C13 11.6 12.6 12 12 12H2C1.4 12 1 11.6 1 11V3Z" stroke="#666" stroke-width="1.3"/></svg></div>
+                    <span class="tree-name">style_models</span>
+                </div>
+                <div class="tree-row">
+                    <div class="tree-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tree-folder"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3C1 2.4 1.4 2 2 2H5.5L7 3.5H12C12.6 3.5 13 3.9 13 4.5V11C13 11.6 12.6 12 12 12H2C1.4 12 1 11.6 1 11V3Z" stroke="#666" stroke-width="1.3"/></svg></div>
+                    <span class="tree-name">embeddings</span>
+                </div>
+                <div class="tree-row">
+                    <div class="tree-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tree-folder"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3C1 2.4 1.4 2 2 2H5.5L7 3.5H12C12.6 3.5 13 3.9 13 4.5V11C13 11.6 12.6 12 12 12H2C1.4 12 1 11.6 1 11V3Z" stroke="#666" stroke-width="1.3"/></svg></div>
+                    <span class="tree-name">diffusers</span>
+                </div>
+                <div class="tree-row">
+                    <div class="tree-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tree-folder"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3C1 2.4 1.4 2 2 2H5.5L7 3.5H12C12.6 3.5 13 3.9 13 4.5V11C13 11.6 12.6 12 12 12H2C1.4 12 1 11.6 1 11V3Z" stroke="#666" stroke-width="1.3"/></svg></div>
+                    <span class="tree-name">vae_approx</span>
+                </div>
+                <div class="tree-row">
+                    <div class="tree-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tree-folder"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3C1 2.4 1.4 2 2 2H5.5L7 3.5H12C12.6 3.5 13 3.9 13 4.5V11C13 11.6 12.6 12 12 12H2C1.4 12 1 11.6 1 11V3Z" stroke="#666" stroke-width="1.3"/></svg></div>
+                    <span class="tree-name">controlnet</span>
+                </div>
+                <div class="tree-row">
+                    <div class="tree-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tree-folder"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3C1 2.4 1.4 2 2 2H5.5L7 3.5H12C12.6 3.5 13 3.9 13 4.5V11C13 11.6 12.6 12 12 12H2C1.4 12 1 11.6 1 11V3Z" stroke="#666" stroke-width="1.3"/></svg></div>
+                    <span class="tree-name">gligen</span>
+                </div>
+                <div class="tree-row">
+                    <div class="tree-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tree-folder"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3C1 2.4 1.4 2 2 2H5.5L7 3.5H12C12.6 3.5 13 3.9 13 4.5V11C13 11.6 12.6 12 12 12H2C1.4 12 1 11.6 1 11V3Z" stroke="#666" stroke-width="1.3"/></svg></div>
+                    <span class="tree-name">upscale_models</span>
+                </div>
+                <div class="tree-row">
+                    <div class="tree-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tree-folder"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3C1 2.4 1.4 2 2 2H5.5L7 3.5H12C12.6 3.5 13 3.9 13 4.5V11C13 11.6 12.6 12 12 12H2C1.4 12 1 11.6 1 11V3Z" stroke="#666" stroke-width="1.3"/></svg></div>
+                    <span class="tree-name">latent_upscale_models</span>
+                </div>
+                <div class="tree-row">
+                    <div class="tree-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tree-folder"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3C1 2.4 1.4 2 2 2H5.5L7 3.5H12C12.6 3.5 13 3.9 13 4.5V11C13 11.6 12.6 12 12 12H2C1.4 12 1 11.6 1 11V3Z" stroke="#666" stroke-width="1.3"/></svg></div>
+                    <span class="tree-name">hypernetworks</span>
+                </div>
+                <div class="tree-row">
+                    <div class="tree-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tree-folder"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3C1 2.4 1.4 2 2 2H5.5L7 3.5H12C12.6 3.5 13 3.9 13 4.5V11C13 11.6 12.6 12 12 12H2C1.4 12 1 11.6 1 11V3Z" stroke="#666" stroke-width="1.3"/></svg></div>
+                    <span class="tree-name">photomaker</span>
+                </div>
+                <div class="tree-row">
+                    <div class="tree-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tree-folder"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3C1 2.4 1.4 2 2 2H5.5L7 3.5H12C12.6 3.5 13 3.9 13 4.5V11C13 11.6 12.6 12 12 12H2C1.4 12 1 11.6 1 11V3Z" stroke="#666" stroke-width="1.3"/></svg></div>
+                    <span class="tree-name">classifiers</span>
+                </div>
+                <div class="tree-row">
+                    <div class="tree-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tree-folder"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3C1 2.4 1.4 2 2 2H5.5L7 3.5H12C12.6 3.5 13 3.9 13 4.5V11C13 11.6 12.6 12 12 12H2C1.4 12 1 11.6 1 11V3Z" stroke="#666" stroke-width="1.3"/></svg></div>
+                    <span class="tree-name">model_patches</span>
+                </div>
+                <div class="tree-row">
+                    <div class="tree-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tree-folder"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3C1 2.4 1.4 2 2 2H5.5L7 3.5H12C12.6 3.5 13 3.9 13 4.5V11C13 11.6 12.6 12 12 12H2C1.4 12 1 11.6 1 11V3Z" stroke="#666" stroke-width="1.3"/></svg></div>
+                    <span class="tree-name">audio_encoders</span>
+                </div>
+                <div class="tree-row">
+                    <div class="tree-chevron"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tree-folder"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 3C1 2.4 1.4 2 2 2H5.5L7 3.5H12C12.6 3.5 13 3.9 13 4.5V11C13 11.6 12.6 12 12 12H2C1.4 12 1 11.6 1 11V3Z" stroke="#666" stroke-width="1.3"/></svg></div>
+                    <span class="tree-name">LLM</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas -->
+        <div class="canvas">
+            <!-- Breadcrumbs (top-left) -->
+            <div class="breadcrumbs-wrap">
+                <div class="mode-btn">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <circle cx="3" cy="8" r="1.5" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <circle cx="8" cy="4" r="1.5" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <circle cx="8" cy="12" r="1.5" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <circle cx="13" cy="8" r="1.5" stroke="#8a8a8a" stroke-width="1.5"/>
+                        <path d="M4.5 8H6.5M9.5 4.5L11.5 7M9.5 11.5L11.5 9" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </div>
+                <div class="undo-btn">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M4 5H10C12.2 5 14 6.8 14 9C14 11.2 12.2 13 10 13H7" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/>
+                        <path d="M6 3L4 5L6 7" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="breadcrumb-item">Current Workflow</div>
+                <div class="breadcrumb-sep">/</div>
+                <div class="breadcrumb-item">New subgraph</div>
+                <div class="breadcrumb-sep">/</div>
+                <div class="breadcrumb-item current">
+                    <span>New subgraph</span>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/></svg>
+                </div>
+            </div>
+
+            <!-- Run Actions -->
+            <div class="fp run-actions">
+                <div class="btn-sec">Custom extension</div>
+                <div class="btn-sec">Custom extension</div>
+                <div class="btn-sec">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <rect x="2" y="2" width="5" height="5" rx="0.5" stroke="#fff" stroke-width="1.5"/>
+                        <rect x="9" y="2" width="5" height="5" rx="0.5" stroke="#fff" stroke-width="1.5"/>
+                        <rect x="2" y="9" width="5" height="5" rx="0.5" stroke="#fff" stroke-width="1.5"/>
+                        <rect x="9" y="9" width="5" height="5" rx="0.5" stroke="#fff" stroke-width="1.5"/>
+                    </svg>
+                    <span>Extensions</span>
+                </div>
+            </div>
+
+            <!-- Run Menu -->
+            <div class="fp run-menu">
+                <div class="run-btn-group">
+                    <div class="batch-count">
+                        <span>1</span>
+                        <div class="batch-arrows">
+                            <div class="batch-arrow"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 8L6 4L10 8" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                            <div class="batch-arrow"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                        </div>
+                    </div>
+                    <div class="run-exec-btn">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2.5L13 8L4 13.5V2.5Z" fill="white"/></svg>
+                        <span>Run</span>
+                    </div>
+                    <div class="run-dropdown"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                </div>
+                <div class="stop-btn"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                <div class="jobs-btn">0 jobs</div>
+                <div class="panel-toggle"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="1" stroke="#8a8a8a" stroke-width="1.5"/><path d="M10 2V14" stroke="#8a8a8a" stroke-width="1.5"/></svg></div>
+            </div>
+
+            <!-- Minimap -->
+            <div class="minimap-wrap">
+                <div class="minimap-panel">
+                    <div class="minimap-header">
+                        <div class="mini-hbtn"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="#8a8a8a" stroke-width="1.5"/><path d="M8 2V3.5M8 12.5V14M2 8H3.5M12.5 8H14M3.8 3.8L4.8 4.8M11.2 11.2L12.2 12.2M12.2 3.8L11.2 4.8M4.8 11.2L3.8 12.2" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                        <div class="mini-hbtn"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4L12 12M12 4L4 12" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    </div>
+                    <div class="minimap-divider"></div>
+                    <div class="minimap-map">
+                        <div class="minimap-nodes">
+                            <div style="position:absolute;left:0;top:25px;width:52px;height:36px;background:#c0392b;border-radius:3px;"></div>
+                            <div style="position:absolute;left:58px;top:42px;width:42px;height:36px;background:#27ae60;border-radius:3px;"></div>
+                            <div style="position:absolute;left:63px;top:4px;width:42px;height:30px;background:#f39c12;border-radius:3px;"></div>
+                            <div style="position:absolute;left:108px;top:42px;width:52px;height:42px;background:#2980b9;border-radius:3px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="minimap-toolbar">
+                    <div style="display:flex;align-items:center;">
+                        <div class="tbtn active"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 1.5V12.5L6.5 9.5L9 14L10.5 13L8 8.5L13 8.5L3 1.5Z" fill="white"/></svg></div>
+                        <div style="padding:0 4px;display:flex;align-items:center;cursor:pointer;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    </div>
+                    <div class="tsep"></div>
+                    <div class="tbtn"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 6V2H6M10 2H14V6M14 10V14H10M6 14H2V10" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="zoom-btn">
+                        <span>100%</span>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    </div>
+                    <div class="tsep"></div>
+                    <div class="tbtn"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4L6 2L10 4L14 2V12L10 14L6 12L2 14V4Z" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 2V12M10 4V14" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                    <div class="tbtn"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 5C3 5 4 6 5 7C6 8 7 10 9 11C11 12 12 11 13 11" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/><path d="M11 9L13 11L11 13" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 3L13 13" stroke="#8a8a8a" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                </div>
+            </div>
+
+            <!-- Instance Manager -->
+            <div class="instance-manager" id="instance-manager">
+
+                <!-- View: List -->
+                <div id="im-view-list" style="display:flex;flex-direction:column;">
+                    <div class="im-header">
+                        <span class="im-title">Instances</span>
+                        <button class="im-close" onclick="closeInstanceManager()">
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 1.5L8.5 8.5M8.5 1.5L1.5 8.5" stroke="#9fa2bd" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </button>
+                    </div>
+                    <div class="im-list">
+                        <div class="im-instance-row current" onclick="switchInstance('ComfyUI Desktop')">
+                            <div class="im-status-dot online"></div>
+                            <div class="im-instance-info">
+                                <div class="im-instance-name">ComfyUI Desktop</div>
+                                <div class="im-instance-meta">Local &middot; v0.3.8</div>
+                            </div>
+                            <span class="im-badge active">Active</span>
+                        </div>
+                        <div class="im-instance-row" onclick="switchInstance('Comfy Cloud')">
+                            <div class="im-status-dot online"></div>
+                            <div class="im-instance-info">
+                                <div class="im-instance-name">Comfy Cloud</div>
+                                <div class="im-instance-meta">Cloud &middot; us-east-1</div>
+                            </div>
+                            <span class="im-badge cloud">Cloud</span>
+                        </div>
+                        <div class="im-instance-row">
+                            <div class="im-status-dot offline"></div>
+                            <div class="im-instance-info">
+                                <div class="im-instance-name">Local Dev</div>
+                                <div class="im-instance-meta">Local &middot; Offline</div>
+                            </div>
+                            <span class="im-badge">Local</span>
+                        </div>
+                    </div>
+                    <div class="im-footer">
+                        <button class="im-new-btn" onclick="startWizard()">
+                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1.5V9.5M1.5 5.5H9.5" stroke="#9fa2bd" stroke-width="1.4" stroke-linecap="round"/></svg>
+                            New Instance
+                        </button>
+                    </div>
+                </div>
+
+                <!-- View: Wizard Step 1 — Environment -->
+                <div id="im-view-w1" style="display:none;flex-direction:column;">
+                    <div class="im-header">
+                        <span class="im-title">
+                            <button onclick="showIMView('im-view-list')" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;padding:0;">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 3L5 7L9 11" stroke="#9fa2bd" stroke-width="1.4" stroke-linecap="round"/></svg>
+                            </button>
+                            New Instance
+                        </span>
+                        <button class="im-close" onclick="closeInstanceManager()">
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 1.5L8.5 8.5M8.5 1.5L1.5 8.5" stroke="#9fa2bd" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </button>
+                    </div>
+                    <div class="im-wizard-body">
+                        <div class="im-wizard-label">Where will this instance live?</div>
+                        <div class="im-env-card" id="env-local" onclick="selectEnv('local')">
+                            <div class="im-env-icon">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="4" width="13" height="8.5" rx="1.5" stroke="#9fa2bd" stroke-width="1.3"/><path d="M5 12.5H11M8 12.5V14" stroke="#9fa2bd" stroke-width="1.3" stroke-linecap="round"/><rect x="3" y="5.5" width="10" height="5.5" rx="0.5" fill="#9fa2bd" opacity="0.12"/></svg>
+                            </div>
+                            <div>
+                                <div class="im-env-name">Local Machine</div>
+                                <div class="im-env-desc">Run ComfyUI on this computer</div>
+                            </div>
+                        </div>
+                        <div class="im-env-card" id="env-cloud" onclick="selectEnv('cloud')">
+                            <div class="im-env-icon">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12.5 10.5a2.5 2.5 0 0 0 0-5h-.3A4.002 4.002 0 0 0 4.1 8.2" stroke="#9fa2bd" stroke-width="1.3" stroke-linecap="round"/><path d="M3 10.5a2 2 0 1 0 0 2h7a2.5 2.5 0 0 0 0-5h-.3" stroke="#9fa2bd" stroke-width="1.3" stroke-linecap="round"/></svg>
+                            </div>
+                            <div>
+                                <div class="im-env-name">Comfy Cloud</div>
+                                <div class="im-env-desc">Managed, hosted in the cloud</div>
+                            </div>
+                        </div>
+                        <div class="im-env-card" id="env-remote" onclick="selectEnv('remote')">
+                            <div class="im-env-icon">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="7.5" rx="1" stroke="#9fa2bd" stroke-width="1.3"/><path d="M5 10.5H11M8 10.5V12.5M5 12.5H11" stroke="#9fa2bd" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="7" r="1.5" stroke="#9fa2bd" stroke-width="1.1"/></svg>
+                            </div>
+                            <div>
+                                <div class="im-env-name">Remote Server</div>
+                                <div class="im-env-desc">Connect to an existing server</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="im-wizard-nav">
+                        <button class="im-wizard-next" id="w1-next" disabled onclick="goW2()">
+                            Continue
+                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M3.5 2L7.5 5.5L3.5 9" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- View: Wizard Step 2 — Location config -->
+                <div id="im-view-w2" style="display:none;flex-direction:column;">
+                    <div class="im-header">
+                        <span class="im-title">
+                            <button onclick="showIMView('im-view-w1')" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;padding:0;">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 3L5 7L9 11" stroke="#9fa2bd" stroke-width="1.4" stroke-linecap="round"/></svg>
+                            </button>
+                            Configure Location
+                        </span>
+                        <button class="im-close" onclick="closeInstanceManager()">
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 1.5L8.5 8.5M8.5 1.5L1.5 8.5" stroke="#9fa2bd" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </button>
+                    </div>
+                    <div class="im-wizard-body" id="w2-body"></div>
+                    <div class="im-wizard-nav">
+                        <button class="im-wizard-next" onclick="goW3()">
+                            Continue
+                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M3.5 2L7.5 5.5L3.5 9" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- View: Wizard Step 3 — Name -->
+                <div id="im-view-w3" style="display:none;flex-direction:column;">
+                    <div class="im-header">
+                        <span class="im-title">
+                            <button onclick="goW2()" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;padding:0;">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 3L5 7L9 11" stroke="#9fa2bd" stroke-width="1.4" stroke-linecap="round"/></svg>
+                            </button>
+                            Name Your Instance
+                        </span>
+                        <button class="im-close" onclick="closeInstanceManager()">
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 1.5L8.5 8.5M8.5 1.5L1.5 8.5" stroke="#9fa2bd" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </button>
+                    </div>
+                    <div class="im-wizard-body">
+                        <div class="im-wizard-label">Instance name</div>
+                        <input class="im-input" id="w3-name" placeholder="My ComfyUI Instance"/>
+                        <div class="im-hint">This name appears in your instance switcher.</div>
+                    </div>
+                    <div class="im-wizard-nav">
+                        <button class="im-wizard-next" onclick="launchInstance()" style="background:#28c840;">
+                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5L4.5 8L9 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            Launch
+                        </button>
+                    </div>
+                </div>
+
+                <!-- View: Done -->
+                <div id="im-view-done" style="display:none;flex-direction:column;">
+                    <div class="im-header">
+                        <span class="im-title">Instance Ready</span>
+                        <button class="im-close" onclick="closeInstanceManager()">
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 1.5L8.5 8.5M8.5 1.5L1.5 8.5" stroke="#9fa2bd" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </button>
+                    </div>
+                    <div class="im-done-body">
+                        <div class="im-done-icon">
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3.5 9L7 12.5L14.5 5.5" stroke="#28c840" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </div>
+                        <div class="im-done-title" id="im-done-title">Instance created</div>
+                        <div class="im-done-sub"  id="im-done-sub">Your instance is initializing.</div>
+                    </div>
+                    <div class="im-wizard-nav" style="justify-content:center;">
+                        <button class="im-wizard-next" onclick="closeInstanceManager()">Done</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Instance Bar -->
+            <div class="instance-bar" id="instance-bar">
+                <div class="instance-bar-inner" onclick="openInstanceManager()">
+                    <div class="instance-bar-dot"></div>
+                    <span class="instance-bar-name">ComfyUI Desktop</span>
+                </div>
+                <button class="instance-bar-toggle" onclick="toggleInstanceBar()">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M7.5 3L4.5 6L7.5 9" stroke="#9fa2bd" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Stats -->
+            <div class="canvas-stats">
+                <div>T: 0.00s</div>
+                <div>I: 0</div>
+                <div>N: 1 [1]</div>
+                <div>V: 2</div>
+                <div>FPS: 00.00</div>
+                <div>Comfy Cloud Beta</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="nav-overlay">
+    <a href="../index.html">← Back to Navigation</a>
+    <span class="nav-sep">|</span>
+    <button class="replay-btn" onclick="replayDownload()">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10.5 6C10.5 8.5 8.5 10.5 6 10.5C3.5 10.5 1.5 8.5 1.5 6C1.5 3.5 3.5 1.5 6 1.5C7.4 1.5 8.6 2.1 9.5 3" stroke="#ccc" stroke-width="1.4" stroke-linecap="round"/><path d="M7.5 1L9.5 3L7.5 4.5" stroke="#ccc" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Replay download
+    </button>
+</div>
+
+<script>
+    // ── Panel / folder / detail toggle ──────────────────────────────────────
+    function toggleModelPanel() {
+        const btn   = document.getElementById('models-btn');
+        const panel = document.getElementById('model-panel');
+        const isOpen = panel.classList.contains('open');
+        panel.classList.toggle('open');
+        btn.classList.toggle('active', !isOpen);
+    }
+
+    function toggleFolder() {
+        document.getElementById('diffusion-row').classList.toggle('expanded');
+        document.getElementById('dl-item-wrap').classList.toggle('open');
+    }
+
+    function toggleDownloadDetail(e) {
+        e.stopPropagation();
+        const collapsed = document.getElementById('dl-collapsed');
+        const detail    = document.getElementById('dl-detail');
+        const opening   = !detail.classList.contains('open');
+        collapsed.style.display = opening ? 'none' : 'flex';
+        detail.classList.toggle('open', opening);
+    }
+
+    // ── Download animation ───────────────────────────────────────────────────
+    const TOTAL_GB   = 19.03;
+    const TOTAL_SECS = 4180; // total estimated download time at ~4.7 MB/s
+
+    let animId        = null;
+    let animStart     = null;
+    let animFromPct   = 52;
+    let animDuration  = 0;
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+
+    function startAnim(fromPct, durationMs) {
+        if (animId) clearInterval(animId);
+        animFromPct  = fromPct;
+        animDuration = durationMs;
+        animStart    = Date.now();
+        setDownloadingState(fromPct);
+        animId = setInterval(tick, 80);
+    }
+
+    function tick() {
+        const t   = Math.min((Date.now() - animStart) / animDuration, 1);
+        const pct = lerp(animFromPct, 100, t);
+        if (t >= 1) { clearInterval(animId); setCompleteState(); return; }
+        setDownloadingState(pct);
+    }
+
+    function setDownloadingState(pct) {
+        const pctInt   = Math.floor(pct);
+        const pctStr   = pctInt + '%';
+        const dlGB     = (pct / 100 * TOTAL_GB).toFixed(2);
+        const speed    = (3.6 + Math.random() * 2.2).toFixed(1);
+        const remSec   = Math.ceil((1 - pct / 100) * TOTAL_SECS);
+        const mins     = Math.floor(remSec / 60);
+        const secs     = remSec % 60;
+
+        // mini bar
+        document.getElementById('mini-bar').style.cssText =
+            `width:${pctStr};background:linear-gradient(90deg,#7c6af7,#5b52d4);`;
+        const miniPct = document.getElementById('mini-pct');
+        miniPct.textContent = pctStr;
+        miniPct.style.color = '#7c6af7';
+
+        // full bar
+        document.getElementById('full-bar').style.cssText =
+            `width:${pctStr};background:linear-gradient(90deg,#7c6af7,#5b52d4);`;
+
+        // stats
+        document.getElementById('dl-stats-text').textContent =
+            `${dlGB} GB / ${TOTAL_GB} GB  ·  ${pctInt}%  ·  ${speed} MB/s  ·  ${mins}m ${secs < 10 ? '0'+secs : secs}s`;
+
+        // arrow icon (downloading)
+        document.getElementById('dl-arrow-icon').innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M7 1V9M7 9L4 6M7 9L10 6" stroke="#7c6af7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M1 12H13" stroke="#7c6af7" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>`;
+
+        // dl badge (folder row)
+        document.querySelector('.dl-badge').style.background = '#7c6af7';
+
+        // sidebar badge — purple pulsing dot
+        const sb = document.getElementById('sidebar-dl-badge');
+        sb.style.background = '#7c6af7';
+        sb.classList.add('visible', 'pulsing');
+
+        // actions (ensure pause/cancel are shown)
+        document.getElementById('dl-actions-wrap').innerHTML = `
+            <button class="dl-btn">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><rect x="2" y="1.5" width="2" height="7" rx="0.5" fill="#ccc"/><rect x="6" y="1.5" width="2" height="7" rx="0.5" fill="#ccc"/></svg>
+                Pause
+            </button>
+            <button class="dl-btn">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 2L8 8M8 2L2 8" stroke="#ccc" stroke-width="1.5" stroke-linecap="round"/></svg>
+                Cancel
+            </button>`;
+    }
+
+    function setCompleteState() {
+        const GREEN = '#28c840';
+
+        // mini bar → green, pct → ✓
+        document.getElementById('mini-bar').style.cssText =
+            `width:100%;background:${GREEN};transition:background 0.4s;`;
+        const miniPct = document.getElementById('mini-pct');
+        miniPct.textContent = '✓';
+        miniPct.style.color = GREEN;
+
+        // full bar → green (remove shimmer by overriding ::after via opacity)
+        document.getElementById('full-bar').style.cssText =
+            `width:100%;background:${GREEN};transition:background 0.4s;`;
+
+        // stats
+        document.getElementById('dl-stats-text').textContent =
+            `${TOTAL_GB} GB / ${TOTAL_GB} GB  ·  100%  ·  Download complete`;
+
+        // folder row badge → green
+        document.querySelector('.dl-badge').style.background = GREEN;
+
+        // sidebar badge → green briefly, then fade out
+        const sb = document.getElementById('sidebar-dl-badge');
+        sb.style.background = GREEN;
+        sb.classList.remove('pulsing');
+        setTimeout(() => sb.classList.remove('visible'), 2000);
+
+        // arrow icon → checkmark
+        document.getElementById('dl-arrow-icon').innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="6" stroke="${GREEN}" stroke-width="1.5"/>
+                <path d="M4 7L6 9.5L10 4.5" stroke="${GREEN}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>`;
+
+        // actions → open folder
+        document.getElementById('dl-actions-wrap').innerHTML = `
+            <button class="dl-btn" style="color:${GREEN};border-color:${GREEN}40;">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path d="M1 2.5C1 2 1.4 1.5 2 1.5H4L5 2.5H8C8.6 2.5 9 2.9 9 3.5V7.5C9 8.1 8.6 8.5 8 8.5H2C1.4 8.5 1 8.1 1 7.5V2.5Z" stroke="${GREEN}" stroke-width="1.1"/>
+                </svg>
+                Open folder
+            </button>`;
+    }
+
+    function replayDownload() {
+        // Ensure panel + folder + detail are open
+        if (!document.getElementById('model-panel').classList.contains('open')) toggleModelPanel();
+        if (!document.getElementById('dl-item-wrap').classList.contains('open')) toggleFolder();
+        document.getElementById('dl-detail').classList.add('open');
+        document.getElementById('dl-collapsed').style.display = 'none';
+
+        // Reset sidebar badge
+        const sb = document.getElementById('sidebar-dl-badge');
+        sb.style.background = '#7c6af7';
+        sb.classList.add('visible', 'pulsing');
+
+        // Start from 0%, complete in ~12 seconds
+        startAnim(0, 12000);
+    }
+
+    // ── Instance Manager ─────────────────────────────────────────────────────
+    // ── Instance settings tab ─────────────────────────────────────────────────
+    let instEnv = null;
+
+    function openInstanceManager() { openSettings('instance'); }
+    function closeInstanceManager() { closeSettings(); }
+
+    function instShowList() {
+        instEnv = null;
+        document.getElementById('inst-wizard-view').style.display = 'none';
+        document.getElementById('inst-list-view').style.display = 'block';
+    }
+
+    function instShowWizard() {
+        instEnv = null;
+        ['ienv-local','ienv-cloud','ienv-remote'].forEach(id => document.getElementById(id).classList.remove('selected'));
+        document.getElementById('iw1-next').disabled = true;
+        ['inst-w1','inst-w2','inst-w3','inst-wdone'].forEach(id => document.getElementById(id).style.display = 'none');
+        document.getElementById('inst-w1').style.display = 'block';
+        document.getElementById('inst-list-view').style.display = 'none';
+        document.getElementById('inst-wizard-view').style.display = 'block';
+    }
+
+    function instShowStep(n) {
+        ['inst-w1','inst-w2','inst-w3','inst-wdone'].forEach(id => document.getElementById(id).style.display = 'none');
+        document.getElementById('inst-w' + n).style.display = 'block';
+    }
+
+    function instSelectEnv(env) {
+        instEnv = env;
+        ['ienv-local','ienv-cloud','ienv-remote'].forEach(id => document.getElementById(id).classList.remove('selected'));
+        document.getElementById('ienv-' + env).classList.add('selected');
+        document.getElementById('iw1-next').disabled = false;
+    }
+
+    function instGoW2() {
+        if (!instEnv) return;
+        const body = document.getElementById('iw2-body');
+        if (instEnv === 'local') {
+            body.innerHTML = `
+                <div class="inst-field-label">Installation path</div>
+                <div class="inst-field-wrap">
+                    <input class="inst-input" value="C:\\Users\\You\\ComfyUI" placeholder="C:\\Users\\You\\ComfyUI"/>
+                    <div class="inst-browse" title="Browse">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 5C2 4.4 2.4 4 3 4H6L7.5 5.5H13C13.6 5.5 14 5.9 14 6.5V11C14 11.6 13.6 12 13 12H3C2.4 12 2 11.6 2 11V5Z" stroke="#9fa2bd" stroke-width="1.2" stroke-linejoin="round"/></svg>
+                    </div>
+                </div>
+                <div style="font-size:11px;color:#3a3a42;">ComfyUI data and models will be stored here.</div>`;
+        } else if (instEnv === 'cloud') {
+            body.innerHTML = `
+                <div class="inst-field-label">Cloud region</div>
+                <select class="inst-input" style="margin-bottom:8px;">
+                    <option>US East (N. Virginia)</option>
+                    <option>US West (Oregon)</option>
+                    <option>Europe (Ireland)</option>
+                    <option>Asia Pacific (Singapore)</option>
+                </select>
+                <div style="font-size:11px;color:#3a3a42;">Your instance will run in this region.</div>`;
+        } else {
+            body.innerHTML = `
+                <div class="inst-field-label">Server URL</div>
+                <input class="inst-input" placeholder="http://192.168.1.100:8188" style="margin-bottom:14px;"/>
+                <div class="inst-field-label">API key <span style="color:#3a3a3e;font-weight:400;">(optional)</span></div>
+                <input class="inst-input" type="password" placeholder="sk-…"/>`;
+        }
+        instShowStep(2);
+    }
+
+    function instGoW3() {
+        const defaults = { local: 'My Local Instance', cloud: 'My Cloud Instance', remote: 'My Remote Server' };
+        document.getElementById('iw3-name').value = defaults[instEnv] || '';
+        instShowStep(3);
+    }
+
+    function instLaunch() {
+        const name = document.getElementById('iw3-name').value.trim() || 'New Instance';
+        document.getElementById('inst-done-title').textContent = '"' + name + '" is ready';
+        const subs = { local: 'Your local instance is initializing.', cloud: 'Cloud instance is spinning up.', remote: 'Connected to remote server.' };
+        document.getElementById('inst-done-sub').textContent = subs[instEnv] || 'Instance is being set up.';
+        ['inst-w1','inst-w2','inst-w3'].forEach(id => document.getElementById(id).style.display = 'none');
+        document.getElementById('inst-wdone').style.display = 'block';
+    }
+
+    function instSwitch(name) {
+        document.querySelector('.instance-bar-name').textContent = name;
+    }
+
+    // ── Instance Bar ─────────────────────────────────────────────────────────
+    function toggleInstanceBar() {
+        document.getElementById('instance-bar').classList.toggle('collapsed');
+    }
+
+    // ── C Logo Menu ───────────────────────────────────────────────────────────
+    function toggleCMenu(e) {
+        e.stopPropagation();
+        const menu = document.getElementById('c-menu');
+        menu.classList.toggle('open');
+    }
+
+    function setTheme(theme, btn) {
+        document.querySelectorAll('.c-menu-theme-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    document.addEventListener('click', function(e) {
+        const menu = document.getElementById('c-menu');
+        if (menu.classList.contains('open') && !menu.contains(e.target)) {
+            menu.classList.remove('open');
+        }
+    });
+
+    // ── Settings ─────────────────────────────────────────────────────────────
+    function openSettings(tab) {
+        tab = tab || 'comfy';
+        document.getElementById('settings-overlay').classList.add('open');
+        selectSettingsTab(tab, document.querySelector('[data-tab="' + tab + '"]'));
+    }
+    function closeSettings() {
+        document.getElementById('settings-overlay').classList.remove('open');
+    }
+    function selectSettingsTab(tab, el) {
+        document.querySelectorAll('.settings-nav-item').forEach(n => n.classList.remove('active'));
+        if (el) el.classList.add('active');
+        document.querySelectorAll('.settings-tab-content').forEach(c => c.style.display = 'none');
+        const pane = document.getElementById('stab-' + tab);
+        if (pane) pane.style.display = 'block';
+    }
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeSettings();
+    });
+    document.getElementById('settings-overlay').addEventListener('click', function(e) {
+        if (e.target === this) closeSettings();
+    });
+
+    // ── Init ─────────────────────────────────────────────────────────────────
+    toggleModelPanel();                       // open panel by default
+    setTimeout(() => startAnim(52, 8000), 300); // continue from 52% on load
+</script>
+
+<!-- ── Settings Overlay ──────────────────────────────────────────────────── -->
+<div class="settings-overlay" id="settings-overlay">
+  <div class="settings-panel">
+
+    <!-- Sidebar nav -->
+    <div class="settings-sidebar">
+        <div class="settings-sidebar-header">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="2" stroke="#e0e0e0" stroke-width="1.4"/><path d="M7.5 1.5V3M7.5 12V13.5M1.5 7.5H3M12 7.5H13.5M3 3L4.1 4.1M10.9 10.9L12 12M12 3L10.9 4.1M4.1 10.9L3 12" stroke="#e0e0e0" stroke-width="1.4" stroke-linecap="round"/></svg>
+            Settings
+        </div>
+        <div class="settings-search">
+            <svg class="settings-search-icon" width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="#3a3a40" stroke-width="1.3"/><path d="M9 9L12 12" stroke="#3a3a40" stroke-width="1.3" stroke-linecap="round"/></svg>
+            <input placeholder="Search Settings..."/>
+        </div>
+        <div class="settings-nav">
+            <div class="settings-nav-label">Account</div>
+            <div class="settings-nav-item" data-tab="user" onclick="selectSettingsTab('user', this)">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2.5" stroke="#7a7a84" stroke-width="1.2"/><path d="M2 12c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="#7a7a84" stroke-width="1.2" stroke-linecap="round"/></svg>
+                User
+            </div>
+
+            <div class="settings-nav-label">Application Settings</div>
+            <div class="settings-nav-item active" data-tab="comfy" onclick="selectSettingsTab('comfy', this)">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="1.8" stroke="#7a7a84" stroke-width="1.2"/><path d="M7 1.5V3M7 11V12.5M1.5 7H3M11 7H12.5M2.9 2.9L3.9 3.9M10.1 10.1L11.1 11.1M11.1 2.9L10.1 3.9M3.9 10.1L2.9 11.1" stroke="#7a7a84" stroke-width="1.2" stroke-linecap="round"/></svg>
+                Comfy
+            </div>
+            <div class="settings-nav-item" data-tab="litegraph" onclick="selectSettingsTab('litegraph', this)">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="3" cy="7" r="1.5" stroke="#7a7a84" stroke-width="1.2"/><circle cx="7.5" cy="3.5" r="1.5" stroke="#7a7a84" stroke-width="1.2"/><circle cx="11" cy="7" r="1.5" stroke="#7a7a84" stroke-width="1.2"/><path d="M4.5 7H6M9.5 7H9M8.8 4.4L10 6" stroke="#7a7a84" stroke-width="1.2" stroke-linecap="round"/></svg>
+                Lite Graph
+            </div>
+            <div class="settings-nav-item" data-tab="appearance" onclick="selectSettingsTab('appearance', this)">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="2" width="11" height="10" rx="1.5" stroke="#7a7a84" stroke-width="1.2"/><path d="M1.5 5.5H12.5" stroke="#7a7a84" stroke-width="1.2"/><path d="M5 5.5V12" stroke="#7a7a84" stroke-width="1.2"/></svg>
+                Appearance
+            </div>
+            <div class="settings-nav-item" data-tab="maskeditor" onclick="selectSettingsTab('maskeditor', this)">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2C4.2 2 2 4 2 6.5C2 9 3.5 11 6 11.5V12.5H8V11.5C10.5 11 12 9 12 6.5C12 4 9.8 2 7 2Z" stroke="#7a7a84" stroke-width="1.2" stroke-linejoin="round"/><circle cx="5" cy="6.5" r="0.8" fill="#7a7a84"/><circle cx="9" cy="6.5" r="0.8" fill="#7a7a84"/></svg>
+                Mask Editor
+            </div>
+            <div class="settings-nav-item" data-tab="3d" onclick="selectSettingsTab('3d', this)">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L12.5 4.5V9.5L7 12.5L1.5 9.5V4.5L7 1.5Z" stroke="#7a7a84" stroke-width="1.2" stroke-linejoin="round"/><path d="M7 1.5V12.5M1.5 4.5L7 7.5L12.5 4.5" stroke="#7a7a84" stroke-width="1.2"/></svg>
+                3D
+            </div>
+
+            <div class="settings-nav-label">Special Settings</div>
+            <div class="settings-nav-item" data-tab="keybinding" onclick="selectSettingsTab('keybinding', this)">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="3.5" width="11" height="7" rx="1" stroke="#7a7a84" stroke-width="1.2"/><path d="M4 6.5H4.01M7 6.5H7.01M10 6.5H10.01M5.5 8.5H8.5" stroke="#7a7a84" stroke-width="1.4" stroke-linecap="round"/></svg>
+                Keybinding
+            </div>
+            <div class="settings-nav-item" data-tab="extension" onclick="selectSettingsTab('extension', this)">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M6 2H4C3.4 2 3 2.4 3 3V5C3 5.6 3.4 6 4 6H6L8 4L6 2Z" stroke="#7a7a84" stroke-width="1.2" stroke-linejoin="round"/><path d="M6 8H4C3.4 8 3 8.4 3 9V11C3 11.6 3.4 12 4 12H6L8 10L6 8Z" stroke="#7a7a84" stroke-width="1.2" stroke-linejoin="round"/><path d="M8 4H10C10.6 4 11 4.4 11 5V9C11 9.6 10.6 10 10 10H8" stroke="#7a7a84" stroke-width="1.2" stroke-linejoin="round"/></svg>
+                Extension
+            </div>
+            <div class="settings-nav-item" data-tab="instance" onclick="selectSettingsTab('instance', this)">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <rect x="1.5" y="3" width="11" height="8" rx="1.5" stroke="#7a7a84" stroke-width="1.2"/>
+                    <path d="M4.5 7H9.5M4.5 9H7.5" stroke="#7a7a84" stroke-width="1.2" stroke-linecap="round"/>
+                    <circle cx="3.5" cy="5.5" r="0.8" fill="#7a7a84"/>
+                </svg>
+                Instance
+            </div>
+            <div class="settings-nav-item" data-tab="about" onclick="selectSettingsTab('about', this)">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="#7a7a84" stroke-width="1.2"/><path d="M7 6.5V10M7 4.5V5" stroke="#7a7a84" stroke-width="1.4" stroke-linecap="round"/></svg>
+                About
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content area -->
+    <div class="settings-main">
+        <div class="settings-close-wrap">
+            <div class="settings-close-btn" onclick="closeSettings()">
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 1.5L9.5 9.5M9.5 1.5L1.5 9.5" stroke="#8a8a96" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+        </div>
+
+        <!-- Tab: Comfy (default) -->
+        <div class="settings-tab-content settings-content" id="stab-comfy" style="display:block;">
+
+            <div class="setting-section">
+                <div class="setting-section-title">Nodes 2.0</div>
+                <div class="setting-row">
+                    <div class="setting-label">
+                        <div class="setting-beta"><svg width="10" height="12" viewBox="0 0 10 12" fill="none"><path d="M3.5 1V5L1 9.5C1 10.3 2 11 3.5 11H6.5C8 11 9 10.3 9 9.5L6.5 5V1" stroke="#0b8ce9" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 1H7" stroke="#0b8ce9" stroke-width="1.2" stroke-linecap="round"/><circle cx="3.5" cy="8.5" r="0.8" fill="#0b8ce9" opacity="0.6"/></svg></div>
+                        Modern Node Design (Nodes 2.0)
+                        <span class="setting-info"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#2e2e36" stroke-width="1.1"/><path d="M5.5 5.5C5.7 4.8 6.1 4.3 6.8 4.3C7.6 4.3 8.2 4.9 8.2 5.7C8.2 6.3 7.8 6.8 7.3 7C7 7.1 6.8 7.4 6.8 7.8" stroke="#2e2e36" stroke-width="1.1" stroke-linecap="round"/><circle cx="6.8" cy="9.3" r="0.5" fill="#2e2e36"/></svg></span>
+                    </div>
+                    <label class="s-toggle"><input type="checkbox" checked><span class="s-toggle-track"></span></label>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-label">
+                        <div class="setting-beta"><svg width="10" height="12" viewBox="0 0 10 12" fill="none"><path d="M3.5 1V5L1 9.5C1 10.3 2 11 3.5 11H6.5C8 11 9 10.3 9 9.5L6.5 5V1" stroke="#0b8ce9" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 1H7" stroke="#0b8ce9" stroke-width="1.2" stroke-linecap="round"/><circle cx="3.5" cy="8.5" r="0.8" fill="#0b8ce9" opacity="0.6"/></svg></div>
+                        Auto-scale layout (Nodes 2.0)
+                        <span class="setting-info"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#2e2e36" stroke-width="1.1"/><path d="M5.5 5.5C5.7 4.8 6.1 4.3 6.8 4.3C7.6 4.3 8.2 4.9 8.2 5.7C8.2 6.3 7.8 6.8 7.3 7C7 7.1 6.8 7.4 6.8 7.8" stroke="#2e2e36" stroke-width="1.1" stroke-linecap="round"/><circle cx="6.8" cy="9.3" r="0.5" fill="#2e2e36"/></svg></span>
+                    </div>
+                    <label class="s-toggle"><input type="checkbox" checked><span class="s-toggle-track"></span></label>
+                </div>
+            </div>
+
+            <div class="setting-section">
+                <div class="setting-section-title">API Nodes</div>
+                <div class="setting-row">
+                    <div class="setting-label">Show API node pricing badge</div>
+                    <label class="s-toggle"><input type="checkbox" checked><span class="s-toggle-track"></span></label>
+                </div>
+            </div>
+
+            <div class="setting-section">
+                <div class="setting-section-title">Dev Mode</div>
+                <div class="setting-row">
+                    <div class="setting-label">Enable dev mode options (API save, etc.)</div>
+                    <label class="s-toggle"><input type="checkbox"><span class="s-toggle-track"></span></label>
+                </div>
+            </div>
+
+            <div class="setting-section">
+                <div class="setting-section-title">Edit Token Weight</div>
+                <div class="setting-row">
+                    <div class="setting-label">Ctrl+up/down precision</div>
+                    <div class="s-slider-wrap">
+                        <input type="range" class="s-slider" min="0" max="1" step="0.01" value="0.05" oninput="document.getElementById('token-weight-val').value=parseFloat(this.value).toFixed(2)"/>
+                        <input type="number" class="s-number" id="token-weight-val" value="0.05" step="0.01" min="0" max="1"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-section">
+                <div class="setting-section-title">Error System</div>
+                <div class="setting-row">
+                    <div class="setting-label">
+                        <div class="setting-beta"><svg width="10" height="12" viewBox="0 0 10 12" fill="none"><path d="M3.5 1V5L1 9.5C1 10.3 2 11 3.5 11H6.5C8 11 9 10.3 9 9.5L6.5 5V1" stroke="#0b8ce9" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 1H7" stroke="#0b8ce9" stroke-width="1.2" stroke-linecap="round"/><circle cx="3.5" cy="8.5" r="0.8" fill="#0b8ce9" opacity="0.6"/></svg></div>
+                        Show errors tab in side panel
+                        <span class="setting-info"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#2e2e36" stroke-width="1.1"/><path d="M5.5 5.5C5.7 4.8 6.1 4.3 6.8 4.3C7.6 4.3 8.2 4.9 8.2 5.7C8.2 6.3 7.8 6.8 7.3 7C7 7.1 6.8 7.4 6.8 7.8" stroke="#2e2e36" stroke-width="1.1" stroke-linecap="round"/><circle cx="6.8" cy="9.3" r="0.5" fill="#2e2e36"/></svg></span>
+                    </div>
+                    <label class="s-toggle"><input type="checkbox" checked><span class="s-toggle-track"></span></label>
+                </div>
+            </div>
+
+            <div class="setting-section">
+                <div class="setting-section-title">Execution</div>
+                <div class="setting-row">
+                    <div class="setting-label">
+                        Live preview method
+                        <span class="setting-info"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#2e2e36" stroke-width="1.1"/><path d="M5.5 5.5C5.7 4.8 6.1 4.3 6.8 4.3C7.6 4.3 8.2 4.9 8.2 5.7C8.2 6.3 7.8 6.8 7.3 7C7 7.1 6.8 7.4 6.8 7.8" stroke="#2e2e36" stroke-width="1.1" stroke-linecap="round"/><circle cx="6.8" cy="9.3" r="0.5" fill="#2e2e36"/></svg></span>
+                    </div>
+                    <select class="s-select"><option>default</option><option>auto</option><option>latent2rgb</option><option>taesd</option></select>
+                </div>
+            </div>
+
+            <div class="setting-section">
+                <div class="setting-section-title">Graph</div>
+                <div class="setting-row">
+                    <div class="setting-label">Link render mode</div>
+                    <select class="s-select"><option>Spline</option><option>Linear</option><option>Straight</option></select>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-label">Canvas zoom speed</div>
+                    <div class="s-slider-wrap">
+                        <input type="range" class="s-slider" min="0.1" max="2" step="0.1" value="1.1" oninput="document.getElementById('zoom-speed-val').value=parseFloat(this.value).toFixed(1)"/>
+                        <input type="number" class="s-number" id="zoom-speed-val" value="1.1" step="0.1"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-section">
+                <div class="setting-section-title">Locale</div>
+                <div class="setting-row">
+                    <div class="setting-label">
+                        <div class="setting-beta"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6C2 3.8 3.8 2 6 2C8.2 2 10 3.8 10 6C10 8.2 8.2 10 6 10" stroke="#0b8ce9" stroke-width="1.2" stroke-linecap="round"/><path d="M6 2C6 2 4.5 3.5 4.5 6C4.5 8.5 6 10 6 10" stroke="#0b8ce9" stroke-width="1.2" stroke-linecap="round"/><path d="M2.5 4.5H9.5M2.5 7.5H6" stroke="#0b8ce9" stroke-width="1.2" stroke-linecap="round"/></svg></div>
+                        Language
+                    </div>
+                    <select class="s-select"><option>English</option><option>中文</option><option>日本語</option><option>한국어</option><option>Français</option><option>Deutsch</option><option>Español</option></select>
+                </div>
+            </div>
+
+            <div class="setting-section">
+                <div class="setting-section-title">Menu</div>
+                <div class="setting-row">
+                    <div class="setting-label">
+                        Use new menu
+                        <span class="setting-info"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#2e2e36" stroke-width="1.1"/><path d="M5.5 5.5C5.7 4.8 6.1 4.3 6.8 4.3C7.6 4.3 8.2 4.9 8.2 5.7C8.2 6.3 7.8 6.8 7.3 7C7 7.1 6.8 7.4 6.8 7.8" stroke="#2e2e36" stroke-width="1.1" stroke-linecap="round"/><circle cx="6.8" cy="9.3" r="0.5" fill="#2e2e36"/></svg></span>
+                    </div>
+                    <select class="s-select"><option>Top</option><option>Bottom</option><option>Disabled</option></select>
+                </div>
+            </div>
+
+            <div class="setting-section">
+                <div class="setting-section-title">Model Library</div>
+                <div class="setting-row">
+                    <div class="setting-label">Show model details on hover</div>
+                    <label class="s-toggle"><input type="checkbox" checked><span class="s-toggle-track"></span></label>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-label">Default model sort</div>
+                    <select class="s-select"><option>Name (A–Z)</option><option>Name (Z–A)</option><option>Recently added</option><option>File size</option></select>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Tab: User -->
+        <div class="settings-tab-content settings-placeholder" id="stab-user" style="display:none;">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="11" r="5" stroke="#2e2e36" stroke-width="1.5"/><path d="M5 28c0-6 4.9-10 11-10s11 4 11 10" stroke="#2e2e36" stroke-width="1.5" stroke-linecap="round"/></svg>
+            User account settings
+        </div>
+
+        <!-- Tab: Lite Graph -->
+        <div class="settings-tab-content settings-content" id="stab-litegraph" style="display:none;">
+            <div class="setting-section">
+                <div class="setting-section-title">Canvas</div>
+                <div class="setting-row">
+                    <div class="setting-label">Show grid</div>
+                    <label class="s-toggle"><input type="checkbox" checked><span class="s-toggle-track"></span></label>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-label">Snap to grid</div>
+                    <label class="s-toggle"><input type="checkbox"><span class="s-toggle-track"></span></label>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-label">Grid size</div>
+                    <input type="number" class="s-number" value="10"/>
+                </div>
+            </div>
+            <div class="setting-section">
+                <div class="setting-section-title">Nodes</div>
+                <div class="setting-row">
+                    <div class="setting-label">Show node tooltips</div>
+                    <label class="s-toggle"><input type="checkbox" checked><span class="s-toggle-track"></span></label>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-label">Default node width</div>
+                    <input type="number" class="s-number" value="220"/>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Appearance -->
+        <div class="settings-tab-content settings-content" id="stab-appearance" style="display:none;">
+            <div class="setting-section">
+                <div class="setting-section-title">Theme</div>
+                <div class="setting-row">
+                    <div class="setting-label">Color scheme</div>
+                    <select class="s-select"><option>Dark</option><option>Light</option><option>System</option></select>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-label">Accent color</div>
+                    <select class="s-select"><option>Blue</option><option>Purple</option><option>Green</option></select>
+                </div>
+            </div>
+            <div class="setting-section">
+                <div class="setting-section-title">Font</div>
+                <div class="setting-row">
+                    <div class="setting-label">UI font size</div>
+                    <input type="number" class="s-number" value="14"/>
+                </div>
+            </div>
+        </div>
+
+        <!-- Other tabs: minimal placeholder -->
+        <div class="settings-tab-content settings-placeholder" id="stab-maskeditor" style="display:none;">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M16 4C10 4 5 8.5 5 14C5 19.5 8.5 24 14 25V27H18V25C23.5 24 27 19.5 27 14C27 8.5 22 4 16 4Z" stroke="#2e2e36" stroke-width="1.5" stroke-linejoin="round"/><circle cx="11.5" cy="14" r="1.8" fill="#2e2e36"/><circle cx="20.5" cy="14" r="1.8" fill="#2e2e36"/></svg>
+            Mask editor settings
+        </div>
+        <div class="settings-tab-content settings-placeholder" id="stab-3d" style="display:none;">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M16 3L28 9.5V22.5L16 29L4 22.5V9.5L16 3Z" stroke="#2e2e36" stroke-width="1.5" stroke-linejoin="round"/><path d="M16 3V29M4 9.5L16 16L28 9.5" stroke="#2e2e36" stroke-width="1.5"/></svg>
+            3D settings
+        </div>
+        <div class="settings-tab-content settings-placeholder" id="stab-keybinding" style="display:none;">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="3" y="8" width="26" height="16" rx="2.5" stroke="#2e2e36" stroke-width="1.5"/><path d="M9 13H9.01M16 13H16.01M23 13H23.01M12 17H20" stroke="#2e2e36" stroke-width="2" stroke-linecap="round"/></svg>
+            Keybinding settings
+        </div>
+        <div class="settings-tab-content settings-placeholder" id="stab-extension" style="display:none;">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M14 5H9C8 5 7 6 7 7V12C7 13 8 14 9 14H14L18 10L14 5Z" stroke="#2e2e36" stroke-width="1.5" stroke-linejoin="round"/><path d="M14 18H9C8 18 7 19 7 20V25C7 26 8 27 9 27H14L18 23L14 18Z" stroke="#2e2e36" stroke-width="1.5" stroke-linejoin="round"/><path d="M18 10H23C24 10 25 11 25 12V20C25 21 24 22 23 22H18" stroke="#2e2e36" stroke-width="1.5" stroke-linejoin="round"/></svg>
+            Extension manager
+        </div>
+        <!-- Tab: Instance -->
+        <div class="settings-tab-content settings-content" id="stab-instance" style="display:none;">
+
+            <!-- List view -->
+            <div id="inst-list-view">
+                <div class="inst-list-header">
+                    <div class="inst-list-title">Instances</div>
+                    <button class="inst-new-btn" onclick="instShowWizard()">
+                        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1.5V9.5M1.5 5.5H9.5" stroke="#9fa2bd" stroke-width="1.4" stroke-linecap="round"/></svg>
+                        New Instance
+                    </button>
+                </div>
+
+                <div class="inst-row current">
+                    <div class="inst-dot online"></div>
+                    <div class="inst-info">
+                        <div class="inst-name">ComfyUI Desktop</div>
+                        <div class="inst-meta">Local Machine &middot; v0.3.8</div>
+                    </div>
+                    <span class="inst-badge active">Active</span>
+                </div>
+
+                <div class="inst-row" onclick="instSwitch('Comfy Cloud', this)">
+                    <div class="inst-dot online"></div>
+                    <div class="inst-info">
+                        <div class="inst-name">Comfy Cloud</div>
+                        <div class="inst-meta">Cloud &middot; us-east-1</div>
+                    </div>
+                    <span class="inst-badge cloud">Cloud</span>
+                    <button class="inst-connect-btn" onclick="event.stopPropagation(); instSwitch('Comfy Cloud')">Connect</button>
+                </div>
+
+                <div class="inst-row">
+                    <div class="inst-dot offline"></div>
+                    <div class="inst-info">
+                        <div class="inst-name">Local Dev</div>
+                        <div class="inst-meta">Local Machine &middot; Offline</div>
+                    </div>
+                    <span class="inst-badge">Local</span>
+                    <button class="inst-connect-btn" style="opacity:0.4;cursor:default;" disabled>Offline</button>
+                </div>
+            </div>
+
+            <!-- Wizard view -->
+            <div id="inst-wizard-view" style="display:none;">
+
+                <!-- Step 1: Environment -->
+                <div id="inst-w1">
+                    <div class="inst-wizard-header">
+                        <button class="inst-back-btn" onclick="instShowList()">
+                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8.5 2.5L4.5 6.5L8.5 10.5" stroke="#7a7a84" stroke-width="1.4" stroke-linecap="round"/></svg>
+                            Back
+                        </button>
+                        <div class="inst-wizard-title">New Instance</div>
+                        <div class="inst-step-label">Step 1 of 3</div>
+                    </div>
+                    <div class="inst-wizard-q">Where will this instance live?</div>
+                    <div class="inst-env-grid">
+                        <div class="inst-env-card" id="ienv-local" onclick="instSelectEnv('local')">
+                            <div class="inst-env-icon">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="11" rx="2" stroke="#9fa2bd" stroke-width="1.4"/><path d="M6 16H14M10 16V18" stroke="#9fa2bd" stroke-width="1.4" stroke-linecap="round"/><rect x="3.5" y="6.5" width="13" height="8" rx="1" fill="#9fa2bd" opacity="0.1"/></svg>
+                            </div>
+                            <div class="inst-env-name">Local Machine</div>
+                            <div class="inst-env-desc">Run ComfyUI on this computer</div>
+                        </div>
+                        <div class="inst-env-card" id="ienv-cloud" onclick="instSelectEnv('cloud')">
+                            <div class="inst-env-icon">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15.5 13a3 3 0 0 0 0-6h-.4A5 5 0 1 0 5 11" stroke="#9fa2bd" stroke-width="1.4" stroke-linecap="round"/><path d="M7 15h6M10 13v4" stroke="#9fa2bd" stroke-width="1.4" stroke-linecap="round"/></svg>
+                            </div>
+                            <div class="inst-env-name">Comfy Cloud</div>
+                            <div class="inst-env-desc">Managed, hosted in the cloud</div>
+                        </div>
+                        <div class="inst-env-card" id="ienv-remote" onclick="instSelectEnv('remote')">
+                            <div class="inst-env-icon">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2.5" y="4" width="15" height="9" rx="1.5" stroke="#9fa2bd" stroke-width="1.4"/><path d="M6 13H14M8 16H12" stroke="#9fa2bd" stroke-width="1.4" stroke-linecap="round"/><circle cx="10" cy="8.5" r="2" stroke="#9fa2bd" stroke-width="1.2"/></svg>
+                            </div>
+                            <div class="inst-env-name">Remote Server</div>
+                            <div class="inst-env-desc">Connect to an existing server</div>
+                        </div>
+                    </div>
+                    <div class="inst-wizard-nav">
+                        <button class="inst-next-btn" id="iw1-next" disabled onclick="instGoW2()">
+                            Continue
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2.5L8 6L4 9.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Location -->
+                <div id="inst-w2" style="display:none;">
+                    <div class="inst-wizard-header">
+                        <button class="inst-back-btn" onclick="instShowStep(1)">
+                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8.5 2.5L4.5 6.5L8.5 10.5" stroke="#7a7a84" stroke-width="1.4" stroke-linecap="round"/></svg>
+                            Back
+                        </button>
+                        <div class="inst-wizard-title">Configure Location</div>
+                        <div class="inst-step-label">Step 2 of 3</div>
+                    </div>
+                    <div id="iw2-body"></div>
+                    <div class="inst-wizard-nav">
+                        <button class="inst-next-btn" onclick="instGoW3()">
+                            Continue
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2.5L8 6L4 9.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Name -->
+                <div id="inst-w3" style="display:none;">
+                    <div class="inst-wizard-header">
+                        <button class="inst-back-btn" onclick="instGoW2()">
+                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8.5 2.5L4.5 6.5L8.5 10.5" stroke="#7a7a84" stroke-width="1.4" stroke-linecap="round"/></svg>
+                            Back
+                        </button>
+                        <div class="inst-wizard-title">Name Your Instance</div>
+                        <div class="inst-step-label">Step 3 of 3</div>
+                    </div>
+                    <div class="inst-field-label">Instance name</div>
+                    <input class="inst-input" id="iw3-name" placeholder="My ComfyUI Instance" style="margin-bottom:8px;"/>
+                    <div style="font-size:11px;color:#3a3a42;margin-bottom:20px;">This name will appear in your instance bar and switcher.</div>
+                    <div class="inst-wizard-nav">
+                        <button class="inst-next-btn green" onclick="instLaunch()">
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            Launch Instance
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Done -->
+                <div id="inst-wdone" style="display:none;">
+                    <div class="inst-done-body">
+                        <div class="inst-done-icon">
+                            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 11L8.5 15.5L18 6" stroke="#28c840" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </div>
+                        <div class="inst-done-title" id="inst-done-title">Instance created</div>
+                        <div class="inst-done-sub" id="inst-done-sub">Your instance is initializing.</div>
+                        <button class="inst-next-btn" style="margin-top:12px;" onclick="instShowList()">Done</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="settings-tab-content settings-content" id="stab-about" style="display:none;">
+            <div class="setting-section">
+                <div class="setting-section-title">About ComfyUI Desktop</div>
+                <div class="setting-row"><div class="setting-label">Version</div><span style="font-size:12px;color:#494a54;">v0.3.8</span></div>
+                <div class="setting-row"><div class="setting-label">ComfyUI Core</div><span style="font-size:12px;color:#494a54;">v0.3.6</span></div>
+                <div class="setting-row"><div class="setting-label">Electron</div><span style="font-size:12px;color:#494a54;">28.2.0</span></div>
+                <div class="setting-row"><div class="setting-label">Platform</div><span style="font-size:12px;color:#494a54;">Windows 11</span></div>
+            </div>
+        </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

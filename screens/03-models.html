@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComfyUI Desktop - Download Models</title>
+    <link rel="stylesheet" href="../styles/common.css">
+</head>
+<body>
+    <div class="installer-window">
+        <div class="installer-header">
+            <h1>ComfyUI Desktop</h1>
+            <p>Essential Models</p>
+        </div>
+
+        <div class="installer-content">
+            <h2 style="margin-bottom: 20px; color: #333;">Download Essential Models</h2>
+
+            <div class="info-box">
+                <p>We'll download the essential models to get you started. You can always add more models later from the model manager.</p>
+            </div>
+
+            <div style="margin: 25px 0;">
+                <div class="checkbox-group" style="margin-bottom: 12px;">
+                    <input type="checkbox" id="model1" checked>
+                    <label for="model1">
+                        <div style="font-weight: 600; margin-bottom: 4px;">Stable Diffusion 1.5 (4.2 GB)</div>
+                        <div style="font-size: 13px; color: #666;">The foundational model for image generation</div>
+                    </label>
+                </div>
+
+                <div class="checkbox-group" style="margin-bottom: 12px;">
+                    <input type="checkbox" id="model2" checked>
+                    <label for="model2">
+                        <div style="font-weight: 600; margin-bottom: 4px;">VAE Model (324 MB)</div>
+                        <div style="font-size: 13px; color: #666;">Improves image quality and color accuracy</div>
+                    </label>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="model3">
+                    <label for="model3">
+                        <div style="font-weight: 600; margin-bottom: 4px;">ControlNet (7.8 GB) - Optional</div>
+                        <div style="font-size: 13px; color: #666;">Advanced pose and composition control</div>
+                    </label>
+                </div>
+            </div>
+
+            <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 6px; font-size: 14px; color: #666;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Total Download Size:</span>
+                    <span style="font-weight: 600;">~4.5 GB</span>
+                </div>
+            </div>
+
+            <div style="margin: 20px 0; padding: 12px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px; font-size: 13px; color: #856404;">
+                Models will download in the background. You can start using ComfyUI once the interface loads.
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="window.location.href='02-location.html'">Back</button>
+                <button class="btn btn-primary" onclick="window.location.href='04-downloading.html'">Start Download</button>
+            </div>
+
+            <div class="nav-footer">
+                <a href="../index.html">← Back to Navigation</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

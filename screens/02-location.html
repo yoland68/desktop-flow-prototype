@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComfyUI Desktop - Installation Location</title>
+    <link rel="stylesheet" href="../styles/common.css">
+</head>
+<body>
+    <div class="installer-window">
+        <div class="installer-header">
+            <h1>ComfyUI Desktop</h1>
+            <p>Choose Installation Location</p>
+        </div>
+
+        <div class="installer-content">
+            <h2 style="margin-bottom: 20px; color: #333;">Select Installation Directory</h2>
+
+            <div class="info-box">
+                <p>Choose where ComfyUI will store models, workflows, and outputs. We recommend a location with at least 50GB of free space.</p>
+            </div>
+
+            <div class="form-group">
+                <label for="install-path">Installation Path</label>
+                <div class="input-group">
+                    <input type="text" id="install-path" value="C:\Users\YourName\ComfyUI" readonly>
+                    <button class="browse-btn" onclick="alert('File browser would open here')">Browse...</button>
+                </div>
+            </div>
+
+            <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 6px; font-size: 14px; color: #666;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span>Required Space:</span>
+                    <span style="font-weight: 600;">~15 GB</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span>Recommended Space:</span>
+                    <span style="font-weight: 600;">50+ GB</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Available Space:</span>
+                    <span style="font-weight: 600; color: #28a745;">256 GB</span>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="window.location.href='01-welcome.html'">Back</button>
+                <button class="btn btn-primary" onclick="window.location.href='03-models.html'">Continue</button>
+            </div>
+
+            <div class="nav-footer">
+                <a href="../index.html">← Back to Navigation</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
