@@ -832,6 +832,53 @@
             z-index: 1;
         }
 
+        /* Switch-instance confirmation dialog */
+        .inst-confirm-backdrop {
+            position: fixed; inset: 0; z-index: 9998;
+            background: rgba(0,0,0,0.45);
+            display: none; align-items: center; justify-content: center;
+        }
+        .inst-confirm-backdrop.open { display: flex; }
+        .inst-confirm-dialog {
+            width: 360px;
+            background: #1e1e22;
+            border: 1px solid #2e2e36;
+            border-radius: 12px;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+            overflow: hidden;
+        }
+        .inst-confirm-body { padding: 24px 24px 20px; }
+        .inst-confirm-icon {
+            width: 36px; height: 36px; border-radius: 10px;
+            background: rgba(251,146,60,0.12);
+            border: 1px solid rgba(251,146,60,0.25);
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 14px;
+        }
+        .inst-confirm-title { font-size: 14px; font-weight: 600; color: #e4e4ea; margin-bottom: 8px; }
+        .inst-confirm-msg { font-size: 12px; color: #7a7a84; line-height: 1.65; }
+        .inst-confirm-msg strong { color: #b0b0bc; font-weight: 500; }
+        .inst-confirm-footer {
+            display: flex; gap: 8px; justify-content: flex-end;
+            padding: 14px 20px;
+            border-top: 1px solid #2a2a2e;
+            background: #1a1a1c;
+        }
+        .inst-confirm-cancel {
+            padding: 7px 16px; border-radius: 7px; font-size: 12px; font-weight: 500;
+            background: transparent; border: 1px solid #2e2e36;
+            color: #9fa2bd; cursor: pointer; font-family: inherit;
+            transition: background 0.15s, color 0.15s;
+        }
+        .inst-confirm-cancel:hover { background: #262629; color: #e0e0e0; }
+        .inst-confirm-ok {
+            padding: 7px 16px; border-radius: 7px; font-size: 12px; font-weight: 500;
+            background: #e8670a; border: none;
+            color: #fff; cursor: pointer; font-family: inherit;
+            transition: background 0.15s;
+        }
+        .inst-confirm-ok:hover { background: #d05c08; }
+
         .inst-done-body {
             display: flex; flex-direction: column; align-items: center;
             gap: 10px; padding: 48px 0; text-align: center;
@@ -992,6 +1039,106 @@
         }
         .im-done-title { font-size: 13px; font-weight: 600; color: #e0e0e0; }
         .im-done-sub   { font-size: 11px; color: #494a50; }
+
+        /* ── Help submenu ──────────────────────────────────────────────────── */
+        .c-menu-item.has-submenu { position: relative; }
+        .c-help-submenu {
+            position: fixed;
+            left: 353px;   /* 84 (c-menu left) + 268 (c-menu width) + 1px */
+            width: 210px;
+            background: #171718;
+            border: 1px solid #2e2e32;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.55);
+            padding: 6px 0;
+            display: none;
+            flex-direction: column;
+            z-index: 600;
+        }
+        .c-menu-item.has-submenu:hover .c-help-submenu { display: flex; }
+        .c-sub-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 7px 14px;
+            cursor: pointer; font-size: 12px; color: #9fa2bd;
+            transition: background 0.12s, color 0.12s;
+        }
+        .c-sub-item:hover { background: rgba(255,255,255,0.05); color: #e0e0e0; }
+        .c-sub-divider { height: 1px; background: #2e2e32; margin: 4px 0; }
+
+        /* ── macOS-style update modals ─────────────────────────────────────── */
+        .sys-modal-backdrop {
+            position: fixed; inset: 0; z-index: 99000;
+            background: rgba(0,0,0,0.35);
+            backdrop-filter: blur(8px);
+            display: none; align-items: center; justify-content: center;
+        }
+        .sys-modal-backdrop.open { display: flex; }
+
+        .sys-modal {
+            width: 340px;
+            background: #f0f0f0;
+            border-radius: 14px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(0,0,0,0.15);
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+        }
+        .sys-modal-body {
+            padding: 28px 24px 20px;
+            display: flex; flex-direction: column; align-items: center;
+            text-align: center;
+            background: #f0f0f0;
+        }
+        .sys-modal-app-icon {
+            width: 64px; height: 64px; border-radius: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .sys-modal-title {
+            font-size: 14px; font-weight: 700; color: #1a1a1a;
+            margin-bottom: 6px; line-height: 1.3;
+        }
+        .sys-modal-subtitle {
+            font-size: 12px; color: #555; line-height: 1.55;
+        }
+        .sys-modal-divider { height: 1px; background: #d0d0d0; margin: 16px 0; width: 100%; }
+        .sys-modal-notes {
+            width: 100%; text-align: left;
+        }
+        .sys-modal-notes-title {
+            font-size: 11px; font-weight: 700; color: #333;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+        .sys-modal-notes ul {
+            padding-left: 16px; margin: 0;
+            font-size: 12px; color: #555; line-height: 1.8;
+        }
+        .sys-modal-version-row {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 11px; color: #888; margin-bottom: 12px;
+        }
+        .sys-modal-ver { font-weight: 600; color: #444; }
+        .sys-modal-arrow { color: #aaa; }
+
+        .sys-modal-footer {
+            display: flex; gap: 1px;
+            border-top: 1px solid #d0d0d0;
+            background: #d0d0d0;
+        }
+        .sys-modal-btn {
+            flex: 1; padding: 13px 8px;
+            border: none; background: #f0f0f0; cursor: pointer;
+            font-size: 13px; font-family: inherit;
+            transition: background 0.12s; color: #1a1a1a;
+        }
+        .sys-modal-btn:first-child { border-radius: 0 0 0 14px; }
+        .sys-modal-btn:last-child  { border-radius: 0 0 14px 0; font-weight: 700; color: #0066cc; }
+        .sys-modal-btn:hover { background: #e4e4e4; }
+        .sys-modal-btn:last-child:hover { background: #e0eaff; }
+        .sys-modal-btn.danger { color: #d0312d; font-weight: 700; }
+        .sys-modal-btn.danger:hover { background: #fff0f0; }
 
         /* ── C Logo Menu ───────────────────────────────────────────────────── */
         .c-menu {
@@ -1188,11 +1335,32 @@
             </div>
         </div>
         <div class="c-menu-divider"></div>
-        <!-- Help -->
-        <div class="c-menu-item">
+        <!-- Help with submenu -->
+        <div class="c-menu-item has-submenu" id="help-menu-item">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="#9fa2bd" stroke-width="1.2"/><path d="M5.5 5.5C5.7 4.7 6.3 4.2 7 4.2C7.9 4.2 8.7 5 8.7 5.9C8.7 6.6 8.2 7.2 7.6 7.5C7.2 7.7 7 8 7 8.5" stroke="#9fa2bd" stroke-width="1.2" stroke-linecap="round"/><circle cx="7" cy="10" r="0.6" fill="#9fa2bd"/></svg>
             <span class="c-menu-item-text">Help</span>
             <svg class="c-menu-item-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 3L7.5 6L4.5 9" stroke="#9fa2bd" stroke-width="1.3" stroke-linecap="round"/></svg>
+            <!-- Flyout submenu -->
+            <div class="c-help-submenu" id="help-submenu">
+                <div class="c-sub-item" onclick="openUpdateModal()">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#9fa2bd" stroke-width="1.2"/><path d="M6.5 4V6.5L8 8" stroke="#9fa2bd" stroke-width="1.2" stroke-linecap="round"/></svg>
+                    Check for Update
+                </div>
+                <div class="c-sub-divider"></div>
+                <div class="c-sub-item" onclick="openRevertModal()">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5A4.5 4.5 0 1 1 4.5 10.4" stroke="#9fa2bd" stroke-width="1.2" stroke-linecap="round"/><path d="M2 3.5V6.5H5" stroke="#9fa2bd" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Revert to Previous Version
+                </div>
+                <div class="c-sub-divider"></div>
+                <div class="c-sub-item">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#9fa2bd" stroke-width="1.2"/><path d="M6.5 6V9M6.5 4.5V5" stroke="#9fa2bd" stroke-width="1.4" stroke-linecap="round"/></svg>
+                    Documentation
+                </div>
+                <div class="c-sub-item">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1.5" y="2" width="10" height="8" rx="1" stroke="#9fa2bd" stroke-width="1.2"/><path d="M4 9.5L6.5 11L9 9.5" stroke="#9fa2bd" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Community Forum
+                </div>
+            </div>
         </div>
     </div>
 
@@ -2036,6 +2204,23 @@
         document.getElementById('inst-wdone').style.display = 'block';
     }
 
+    let instSwitchTarget = null;
+
+    function instConfirmSwitch(name) {
+        instSwitchTarget = name;
+        document.getElementById('inst-confirm-target').textContent = name;
+        document.getElementById('inst-confirm-backdrop').classList.add('open');
+    }
+    function instConfirmCancel() {
+        document.getElementById('inst-confirm-backdrop').classList.remove('open');
+        instSwitchTarget = null;
+    }
+    function instConfirmOk() {
+        if (instSwitchTarget) instSwitch(instSwitchTarget);
+        document.getElementById('inst-confirm-backdrop').classList.remove('open');
+        instSwitchTarget = null;
+    }
+
     function instSwitch(name) {
         document.querySelector('.instance-bar-name').textContent = name;
         document.getElementById('settings-inst-name').textContent = name;
@@ -2124,6 +2309,40 @@
         if (e.target === this) closeSettings();
     });
 
+    // ── Update / Revert modals ───────────────────────────────────────────────
+    function openUpdateModal()  {
+        document.getElementById('c-menu').classList.remove('open');
+        document.getElementById('update-modal').classList.add('open');
+    }
+    function closeUpdateModal() { document.getElementById('update-modal').classList.remove('open'); }
+
+    function openRevertModal()  {
+        document.getElementById('c-menu').classList.remove('open');
+        document.getElementById('revert-modal').classList.add('open');
+    }
+    function closeRevertModal() { document.getElementById('revert-modal').classList.remove('open'); }
+
+    function startUpdate() {
+        closeUpdateModal();
+        window.location.href = '06-updating.html';
+    }
+    function startRevert() {
+        closeRevertModal();
+        window.location.href = '06-updating.html?mode=revert';
+    }
+
+    // Position help submenu vertically based on where the Help item is
+    document.addEventListener('DOMContentLoaded', function() {
+        const helpItem = document.getElementById('help-menu-item');
+        const sub = document.getElementById('help-submenu');
+        if (helpItem && sub) {
+            helpItem.addEventListener('mouseenter', function() {
+                const r = helpItem.getBoundingClientRect();
+                sub.style.top = r.top + 'px';
+            });
+        }
+    });
+
     // ── Global tooltip ───────────────────────────────────────────────────────
     (function() {
         const tip = document.getElementById('global-tip');
@@ -2160,8 +2379,96 @@
     setTimeout(() => startAnim(52, 8000), 300); // continue from 52% on load
 </script>
 
+<!-- Update available modal (macOS-style) -->
+<div class="sys-modal-backdrop" id="update-modal" onclick="closeUpdateModal()">
+    <div class="sys-modal" onclick="event.stopPropagation()">
+        <div class="sys-modal-body">
+            <div class="sys-modal-app-icon">
+                <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+                    <path d="M29 10C25.8 5.7 20.7 3.3 15.2 4.4C8.7 5.9 4.2 12 4.2 18.7C4.2 25.4 8.7 31.1 15 32.5C20.5 33.7 25.7 31.3 28.9 27" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div class="sys-modal-title">ComfyUI Desktop 0.4.0 is available</div>
+            <div class="sys-modal-version-row">
+                <span class="sys-modal-ver">0.3.8</span>
+                <span class="sys-modal-arrow">→</span>
+                <span class="sys-modal-ver" style="color:#0066cc;">0.4.0</span>
+                <span style="color:#aaa;">· 48 MB</span>
+            </div>
+            <div class="sys-modal-subtitle">
+                A new version of ComfyUI Desktop is available. Would you like to update now?
+            </div>
+            <div class="sys-modal-divider"></div>
+            <div class="sys-modal-notes">
+                <div class="sys-modal-notes-title">What's New</div>
+                <ul>
+                    <li>Improved model library performance</li>
+                    <li>New node types for video generation</li>
+                    <li>Faster startup and reduced memory use</li>
+                    <li>Bug fixes and stability improvements</li>
+                </ul>
+            </div>
+        </div>
+        <div class="sys-modal-footer">
+            <button class="sys-modal-btn" onclick="closeUpdateModal()">Not Now</button>
+            <button class="sys-modal-btn" onclick="startUpdate()">Update Now</button>
+        </div>
+    </div>
+</div>
+
+<!-- Revert to previous version modal -->
+<div class="sys-modal-backdrop" id="revert-modal" onclick="closeRevertModal()">
+    <div class="sys-modal" onclick="event.stopPropagation()">
+        <div class="sys-modal-body">
+            <div class="sys-modal-app-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706);">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                    <path d="M5 16A11 11 0 1 1 10.5 25.4" stroke="white" stroke-width="3" stroke-linecap="round"/>
+                    <path d="M5 9V16H12" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="sys-modal-title">Revert to Previous Version?</div>
+            <div class="sys-modal-version-row">
+                <span class="sys-modal-ver">0.3.8</span>
+                <span class="sys-modal-arrow">→</span>
+                <span class="sys-modal-ver" style="color:#d97706;">0.3.7</span>
+            </div>
+            <div class="sys-modal-subtitle">
+                ComfyUI Desktop will be downgraded to version 0.3.7.<br><br>
+                Your workflows, models, and settings will not be affected.
+            </div>
+        </div>
+        <div class="sys-modal-footer">
+            <button class="sys-modal-btn" onclick="closeRevertModal()">Cancel</button>
+            <button class="sys-modal-btn danger" onclick="startRevert()">Revert</button>
+        </div>
+    </div>
+</div>
+
 <!-- Global tooltip -->
 <div id="global-tip"></div>
+
+<!-- Switch-instance confirmation dialog -->
+<div class="inst-confirm-backdrop" id="inst-confirm-backdrop" onclick="instConfirmCancel()">
+    <div class="inst-confirm-dialog" onclick="event.stopPropagation()">
+        <div class="inst-confirm-body">
+            <div class="inst-confirm-icon">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                    <path d="M9 3L16 15H2L9 3Z" stroke="#f97316" stroke-width="1.5" stroke-linejoin="round"/>
+                    <path d="M9 8V11M9 13V13.5" stroke="#f97316" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div class="inst-confirm-title">Switch instance?</div>
+            <div class="inst-confirm-msg">
+                Connecting to <strong id="inst-confirm-target"></strong> will spin down your current
+                <strong>ComfyUI Desktop</strong> instance. Any workflows currently running will be stopped.
+            </div>
+        </div>
+        <div class="inst-confirm-footer">
+            <button class="inst-confirm-cancel" onclick="instConfirmCancel()">Cancel</button>
+            <button class="inst-confirm-ok" onclick="instConfirmOk()">Switch &amp; Connect</button>
+        </div>
+    </div>
+</div>
 
 <!-- ── Settings Overlay ──────────────────────────────────────────────────── -->
 <div class="settings-overlay" id="settings-overlay">
@@ -2479,14 +2786,14 @@
                     </button>
                 </div>
 
-                <div class="inst-row" onclick="instSwitch('Comfy Cloud', this)">
+                <div class="inst-row" onclick="instConfirmSwitch('Comfy Cloud')">
                     <div class="inst-dot online"></div>
                     <div class="inst-info">
                         <div class="inst-name">Comfy Cloud</div>
                         <div class="inst-meta">Cloud &middot; us-east-1</div>
                     </div>
                     <span class="inst-badge cloud">Cloud</span>
-                    <button class="inst-connect-btn" onclick="event.stopPropagation(); instSwitch('Comfy Cloud')">Connect</button>
+                    <button class="inst-connect-btn" onclick="event.stopPropagation(); instConfirmSwitch('Comfy Cloud')">Connect</button>
                     <button class="inst-clone-btn" title="Clone instance" onclick="event.stopPropagation(); startCloneWizard('Comfy Cloud')">
                         <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="4.5" y="1.5" width="7" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="1.5" y="4" width="7" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
                     </button>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComfyUI Desktop - Updating</title>
+    <link rel="stylesheet" href="../styles/common.css">
+    <style>
+        .update-icon {
+            width: 64px; height: 64px;
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px;
+            flex-shrink: 0;
+        }
+        .update-icon.updating {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .update-icon.reverting {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .step-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 24px 0;
+        }
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: #aaa;
+            transition: color 0.3s;
+        }
+        .step-item.active { color: #555; font-weight: 500; }
+        .step-item.done   { color: #28a745; }
+
+        .step-indicator {
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            border: 2px solid #ddd;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.3s;
+        }
+        .step-item.active .step-indicator {
+            border-color: #667eea;
+            background: #f0f2ff;
+        }
+        .step-item.done .step-indicator {
+            border-color: #28a745;
+            background: #f0fff4;
+        }
+        .step-spinner {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            border: 2px solid #667eea;
+            border-top-color: transparent;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .step-check {
+            display: none;
+        }
+        .step-item.done .step-check { display: block; }
+        .step-item.done .step-spinner { display: none; }
+        .step-item.active .step-spinner { display: block; }
+        .step-item:not(.active):not(.done) .step-spinner { display: none; }
+
+        .progress-pct {
+            text-align: right;
+            font-size: 13px;
+            color: #999;
+            margin-top: 6px;
+        }
+
+        .notice-box {
+            background: #f8f9fa;
+            border-left: 3px solid #667eea;
+            border-radius: 4px;
+            padding: 12px 14px;
+            font-size: 12px;
+            color: #666;
+            line-height: 1.55;
+            margin-top: 8px;
+        }
+        .notice-box.amber { border-left-color: #f59e0b; }
+
+        .btn-primary:disabled {
+            opacity: 0.4; cursor: default;
+            transform: none !important; box-shadow: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="installer-window">
+        <div class="installer-header" id="page-header">
+            <h1>ComfyUI Desktop</h1>
+            <p id="header-sub">Updating to version 0.4.0</p>
+        </div>
+
+        <div class="installer-content">
+
+            <div class="update-icon" id="update-icon">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                    <circle cx="16" cy="16" r="13" stroke="white" stroke-width="2.5" stroke-dasharray="4 3" id="icon-ring"/>
+                    <path id="icon-path-update" d="M10 17L14 21L22 12" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0"/>
+                    <path id="icon-path-arrow"  d="M16 8v8M11 14l5 5 5-5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+
+            <h2 id="page-title" style="text-align:center; color:#333; margin-bottom:6px; font-size:18px;"></h2>
+            <p  id="page-sub"   style="text-align:center; color:#888; font-size:13px; margin-bottom:0;"></p>
+
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+                </div>
+                <div class="progress-pct"><span id="pct-label">0%</span></div>
+            </div>
+
+            <div class="step-list" id="step-list"></div>
+
+            <div class="notice-box" id="notice-box"></div>
+
+            <div class="button-group" style="margin-top:24px;">
+                <button class="btn btn-secondary" onclick="window.location.href='../index.html'">Back to Navigation</button>
+                <button class="btn btn-primary" id="done-btn" disabled onclick="window.location.href='05-comfyui.html'">Restart Now</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const isRevert = new URLSearchParams(location.search).get('mode') === 'revert';
+
+        const CONFIG = isRevert ? {
+            headerSub:  'Reverting to version 0.3.7',
+            title:      'Reverting ComfyUI Desktop',
+            sub:        'Please keep this window open until the process completes.',
+            iconClass:  'reverting',
+            notice:     '⚠️ ComfyUI will restart automatically once the revert is complete. Your workflows and models will not be affected.',
+            noticeClass:'amber',
+            steps: [
+                'Backing up current version',
+                'Downloading version 0.3.7',
+                'Verifying package integrity',
+                'Restoring previous version',
+                'Cleaning up',
+                'Ready to restart',
+            ],
+            doneTitle:  'Revert complete',
+            doneSub:    'ComfyUI Desktop has been reverted to version 0.3.7.',
+        } : {
+            headerSub:  'Updating to version 0.4.0',
+            title:      'Updating ComfyUI Desktop',
+            sub:        'Please keep this window open until the update completes.',
+            iconClass:  'updating',
+            notice:     'ComfyUI will restart automatically once the update is installed. You can continue working in the current session until then.',
+            noticeClass:'',
+            steps: [
+                'Downloading update package',
+                'Verifying package integrity',
+                'Backing up current version',
+                'Installing update',
+                'Applying configuration',
+                'Ready to restart',
+            ],
+            doneTitle:  'Update complete',
+            doneSub:    'ComfyUI Desktop has been updated to version 0.4.0.',
+        };
+
+        // Apply config
+        document.getElementById('header-sub').textContent  = CONFIG.headerSub;
+        document.getElementById('page-title').textContent  = CONFIG.title;
+        document.getElementById('page-sub').textContent    = CONFIG.sub;
+        document.getElementById('update-icon').classList.add(CONFIG.iconClass);
+        const nb = document.getElementById('notice-box');
+        nb.textContent = CONFIG.notice;
+        if (CONFIG.noticeClass) nb.classList.add(CONFIG.noticeClass);
+
+        // Build step list
+        const stepList = document.getElementById('step-list');
+        CONFIG.steps.forEach((label, i) => {
+            stepList.innerHTML += `
+                <div class="step-item" id="step-${i}">
+                    <div class="step-indicator">
+                        <div class="step-spinner"></div>
+                        <svg class="step-check" width="10" height="10" viewBox="0 0 10 10" fill="none">
+                            <path d="M2 5L4.2 7.5L8 3" stroke="#28a745" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <span>${label}</span>
+                </div>`;
+        });
+
+        // Animation
+        const fill  = document.getElementById('progress-fill');
+        const pctLbl = document.getElementById('pct-label');
+        const totalMs = 7000;
+        const start = Date.now();
+        let currentStep = 0;
+
+        function activateStep(i) {
+            const el = document.getElementById('step-' + i);
+            if (el) el.classList.add('active');
+        }
+        function completeStep(i) {
+            const el = document.getElementById('step-' + i);
+            if (el) { el.classList.remove('active'); el.classList.add('done'); }
+        }
+        activateStep(0);
+
+        const timer = setInterval(function() {
+            const elapsed = Date.now() - start;
+            const t = Math.min(elapsed / totalMs, 1);
+            const pct = Math.round(t * 100);
+            fill.style.width = pct + '%';
+            pctLbl.textContent = pct + '%';
+
+            // Step transitions at even intervals
+            const stepIdx = Math.min(Math.floor(t * CONFIG.steps.length), CONFIG.steps.length - 1);
+            if (stepIdx > currentStep) {
+                for (let s = currentStep; s < stepIdx; s++) completeStep(s);
+                currentStep = stepIdx;
+                if (currentStep < CONFIG.steps.length) activateStep(currentStep);
+            }
+
+            if (t >= 1) {
+                clearInterval(timer);
+                completeStep(currentStep);
+                fill.style.background = isRevert
+                    ? 'linear-gradient(90deg,#f59e0b,#d97706)'
+                    : 'linear-gradient(90deg,#28a745,#20963a)';
+                document.getElementById('page-title').textContent = CONFIG.doneTitle;
+                document.getElementById('page-sub').textContent   = CONFIG.doneSub;
+                // Swap icon to checkmark
+                document.getElementById('icon-path-arrow').style.opacity  = '0';
+                document.getElementById('icon-path-update').style.opacity = '1';
+                document.getElementById('done-btn').disabled = false;
+            }
+        }, 80);
+    </script>
+</body>
+</html>
